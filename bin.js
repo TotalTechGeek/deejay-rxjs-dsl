@@ -1,4 +1,4 @@
-
+const ExpiryMap = require('expiry-map').default
 
 
 const defaultIntervals = [30, 60, 60 * 5, 60 * 15, 60 * 30, 60 * 60, 60 * 60 * 2, 60 * 60 * 4, 60 * 60 * 8, 60 * 60 * 24, 60 * 60 * 24 * 3, 60 * 60 * 24 * 7, 60 * 60 * 24 * 30]
@@ -41,10 +41,12 @@ function sortKeys(obj) {
 }
 
 function createReducer (maxLength = 3, intervals = defaultIntervals, warn = false) {
-    let interval = 0
+    const intervalTracked = new ExpiryMap(30e3) // keeps track of this interval for efficiency for 30s, it's okay to recompute though
     if (warn) scanIntervals(intervals)
     function push (obj, { x, y }, size = maxLength) {
         if (!obj) obj = {}
+        let interval = intervalTracked.get(obj) || 0
+        const startingAggregate = obj
         let scale = BigInt(intervals[interval])
         const zone = (BigInt(x) / BigInt(scale)) | 0n
         const bucket = `${zone*scale}-${zone*scale+scale}`
@@ -56,8 +58,9 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
             obj = condense(obj, scale)
             resort = true
         }
-
         if (resort) obj = sortKeys(obj)
+        intervalTracked.delete(startingAggregate)
+        intervalTracked.set(obj, interval)
         return obj
     }
     return push

@@ -7,6 +7,13 @@
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.172.tgz#aad774c28e7bfd7a67de25408e03ee5a8c3d028a"
   integrity sha512-/BHF5HAx3em7/KkzVKm3LrsD6HZAXuXO1AJZQ3cRRBZj4oHZDviWPYu0aEplAqDFNHZPW6d3G7KN+ONcCCC7pw==
 
+expiry-map@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/expiry-map/-/expiry-map-1.1.0.tgz#a625630c32370e60b5866d5315b1ca28f3da2562"
+  integrity sha512-EviBh1pKXf8TuPIf88HS27Ti2biOZA1Ci4FeWhXzgY/tCBv05FA+7gO0jXt7AF5JgaiReAld1ag3jd5vzvKupw==
+  dependencies:
+    map-age-cleaner "^0.1.0"
+
 json-logic-engine@^1.1.5:
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.5.tgz#0e9c1a999435439b98006464a0dd14a49781604a"
@@ -23,6 +30,18 @@ lodash@^4.17.21:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
+
+map-age-cleaner@^0.1.0:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/map-age-cleaner/-/map-age-cleaner-0.1.3.tgz#7d583a7306434c055fe474b0f45078e6e1b4b92a"
+  integrity sha512-bJzx6nMoP6PDLPBFmg7+xRKeFZvFboMrGlxmNj9ClvX53KrmvM5bXFXEWjbz4cz1AFn+jWJ9z/DJSz7hrs0w3w==
+  dependencies:
+    p-defer "^1.0.0"
+
+p-defer@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/p-defer/-/p-defer-1.0.0.tgz#9f6eb182f6c9aa8cd743004a7d4f96b196b0fb0c"
+  integrity sha1-n26xgvbJqozXQwBKfU+WsZaw+ww=
 
 rxjs@^7.3.0:
   version "7.3.0"
