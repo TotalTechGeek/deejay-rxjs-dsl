@@ -10,7 +10,7 @@ function * gen (count = Infinity) {
 
 from(gen(1000)).pipe(
    ...dsl(`
-        reduce dynamicBin($.accumulator, objectQuery($.current,'{"x":"$.nice","y":"$.code.0"}'), 12), 0
+        reduce dynamicTimeBin($.accumulator, objectQuery($.current,'{"x":"$.nice","y":"$.code.0"}'), 12), 0
     `),
 ).subscribe({
     next: console.log,

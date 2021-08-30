@@ -22,7 +22,7 @@ function condense (obj, scale) {
     const result = {}
     for (const key in obj) {
         const [top] = key.split('-');
-        const zone = (top / scale) | 0
+        const zone = (BigInt(top) / BigInt(scale)) | 0n
         const bucket = `${zone*scale}-${zone*scale+scale}`
         result[bucket] = addObject(result[bucket] || {}, obj[key])
     }
@@ -45,14 +45,14 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
     if (warn) scanIntervals(intervals)
     function push (obj, { x, y }, size = maxLength) {
         if (!obj) obj = {}
-        let scale = intervals[interval]
-        const zone = (x / scale) | 0
+        let scale = BigInt(intervals[interval])
+        const zone = (BigInt(x) / BigInt(scale)) | 0n
         const bucket = `${zone*scale}-${zone*scale+scale}`
         let resort = !obj[bucket]    
         obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })
         while (Object.keys(obj).length > size) {
             interval++
-            scale = intervals[Math.min(interval, intervals.length -1)] * (10**Math.max(interval - intervals.length + 1, 0))
+            scale = BigInt(intervals[Math.min(interval, intervals.length -1)]) * BigInt(10**Math.max(interval - intervals.length + 1, 0))
             obj = condense(obj, scale)
             resort = true
         }
