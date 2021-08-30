@@ -41,7 +41,7 @@ function sortKeys(obj) {
 }
 
 function createReducer (maxLength = 3, intervals = defaultIntervals, warn = false) {
-    const intervalTracked = new ExpiryMap(30e3) // keeps track of this interval for efficiency for 30s, it's okay to recompute though
+    const intervalTracked = new ExpiryMap(180e3) // keeps track of this interval for efficiency for 3m, it's okay to recompute though
     if (warn) scanIntervals(intervals)
     function push (obj, { x, y }, size = maxLength) {
         if (!obj) obj = {}
@@ -50,17 +50,21 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
         let scale = BigInt(intervals[interval])
         const zone = (BigInt(x) / BigInt(scale)) | 0n
         const bucket = `${zone*scale}-${zone*scale+scale}`
-        let resort = !obj[bucket]    
+        let intervalChanged = !obj[bucket]
         obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })
         while (Object.keys(obj).length > size) {
             interval++
             scale = BigInt(intervals[Math.min(interval, intervals.length -1)]) * BigInt(10**Math.max(interval - intervals.length + 1, 0))
             obj = condense(obj, scale)
-            resort = true
+            intervalChanged = true
         }
-        if (resort) obj = sortKeys(obj)
-        intervalTracked.delete(startingAggregate)
-        intervalTracked.set(obj, interval)
+        if (intervalChanged) {
+            obj = sortKeys(obj)
+            // yes, I'm aware it can fall out of scope if the interval doesn't change for a few minutes.
+            // this is unlikely though, but keeps things performant.
+            if (startingAggregate !== obj) intervalTracked.delete(startingAggregate)
+            intervalTracked.set(obj, interval)
+        }
         return obj
     }
     return push
