@@ -396,5 +396,5 @@ function dsl (str, mode = 0) {
  }
  
 
-module.exports = { dsl, generateCompiledLogic }
+module.exports = { dsl, generateCompiledLogic, engine }
 
