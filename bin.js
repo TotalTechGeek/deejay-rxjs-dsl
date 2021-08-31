@@ -61,12 +61,12 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
             obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })            
         } 
         else {
-            const zone = (BigInt(x | 0) / BigInt(scale)) | 0n
+            const zone = (BigInt(x instanceof Date ? x : x | 0) / BigInt(scale)) | 0n
             const bucket = BigInt(scale) === 1n && !floatDetected ? `${zone*scale}` : `${zone*scale}-${zone*scale+scale}`
             intervalChanged = !obj[bucket]
             obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })
     
-            if((x | 0) != x) {
+            if(!(x instanceof Date) && (x | 0) != x) {
                 intervalChanged = true
                 floatDetected = true
                 obj = condense(obj, scale)
