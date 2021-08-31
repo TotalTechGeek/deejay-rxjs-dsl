@@ -20,9 +20,10 @@ function addObject (a, b) {
 function condense (obj, scale) {
     const result = {}
     for (const key in obj) {
-        if (/^[0-9]+\-[0-9]+$/.exec(key)) {
+        if (/^[0-9]+(\-[0-9]+)?$/.exec(key)) {
             const [top] = key.split('-');
             const zone = (BigInt(top) / BigInt(scale)) | 0n
+            // always use the `-` setup, even though we do the scale on 1 elsewhere.
             const bucket = `${zone*scale}-${zone*scale+scale}`
             result[bucket] = addObject(result[bucket] || {}, obj[key])
         } else {
@@ -48,7 +49,7 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
     if (warn) scanIntervals(intervals)
     function push (obj, { x, y }, size = maxLength) {
         if (!obj) obj = {}
-        let [interval, nonInterval] = intervalTracked.get(obj) || [0, 0]
+        let [interval, nonInterval, floatDetected] = intervalTracked.get(obj) || [0, 0]
         const startingAggregate = obj
         let scale = BigInt(intervals[interval])
 
@@ -60,12 +61,17 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
             obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })            
         } 
         else {
-            const zone = (BigInt(x) / BigInt(scale)) | 0n
-            const bucket = `${zone*scale}-${zone*scale+scale}`
-            
+            const zone = (BigInt(x | 0) / BigInt(scale)) | 0n
+            const bucket = BigInt(scale) === 1n && !floatDetected ? `${zone*scale}` : `${zone*scale}-${zone*scale+scale}`
             intervalChanged = !obj[bucket]
             obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })
     
+            if((x | 0) != x) {
+                intervalChanged = true
+                floatDetected = true
+                obj = condense(obj, scale)
+            }
+            
             while (Object.keys(obj).length - nonInterval > size) {
                 interval++
                 scale = BigInt(intervals[Math.min(interval, intervals.length -1)]) * BigInt(10**Math.max(interval - intervals.length + 1, 0))
@@ -79,7 +85,7 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
             // yes, I'm aware it can fall out of scope if the interval doesn't change for a few minutes.
             // this is unlikely though, but keeps things performant.
             if (startingAggregate !== obj) intervalTracked.delete(startingAggregate)
-            intervalTracked.set(obj, [interval, nonInterval])
+            intervalTracked.set(obj, [interval, nonInterval, floatDetected])
         }
 
         return obj
