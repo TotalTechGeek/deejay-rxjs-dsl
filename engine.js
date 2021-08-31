@@ -39,25 +39,19 @@ engine.addMethod('from', ([key, value]) => _.fromPairs([[key, value]]), { determ
 engine.addMethod('combine', ([a,b]) => ({...a, ...b}), { deterministic: true })
 engine.addModule('Math', Math, { deterministic: true })
 engine.addMethod('split', ([i, splitter]) => i.split(splitter), { deterministic: true })
-
 engine.addMethod('objectQuery', objectQuery, { deterministic: true })
-
-engine.addMethod('notify', ([key, data, category]) => {
-    console.log(`Sagas waiting for resource: ${key} in category ${category} will be informed of ${JSON.stringify(data)}.`)
-})
 engine.addMethod('aggregate', ([a,b]) => {
     if(!a) {
         a = { count: 0, sum: 0 }
     }
     return { count: a.count + 1, sum: a.sum + b }
 })
-engine.addMethod('date', i => new Date().toISOString())
+engine.addMethod('date', i => new Date(i).toISOString())
 engine.addMethod('stringify', i => JSON.stringify(i), { deterministic: true })
 engine.addMethod('startsWith', ([a,b]) => (''+a).startsWith(b), { deterministic: true })
 engine.addMethod('first' , i => i[0], { deterministic: true })
 engine.addMethod('last' , i => i[i.length-1], { deterministic: true })
 engine.addMethod('query', query, { deterministic: true })
-engine.addMethod('log', i => console.log(i))
 engine.addMethod('list', i => [].concat(i), { deterministic: true })
 engine.addMethod('overwrite', { 
     method: ([obj, name, value], context, above, engine) =>  { 
