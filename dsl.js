@@ -240,7 +240,11 @@ function toLogic (str, strings) {
         return strings[+str.substring(1)]
     }
 
-    if (!str) {
+    if (str === 'null') {
+        return null
+    }
+
+    if (!str || str === 'undefined') {
         return undefined
     }
 
@@ -315,7 +319,7 @@ function generateLogic (str) {
 
 
 const accumulators = new Set(['reduce', 'scan', 'mergeScan', 'switchScan'])
-const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout'])
+const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount'])
 
 /**
  * @param {keyof typeof operators} name 

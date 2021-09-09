@@ -9,10 +9,18 @@ function scanIntervals (intervals) {
     }
 }
 
-function addObject (a, b) {
+function reduceObject (a, b, methods = {
+    min: Math.min,
+    max: Math.max
+}) {
     const result = { ...b }
     for (const key in a) {
-        result[key] = (result[key] || 0) + a[key]
+        if (methods[key]) {
+            result[key] = methods[key](result[key] || 0, a[key])
+        }
+        else {
+            result[key] = (result[key] || 0) + a[key]
+        }
     }
     return result
 }
@@ -25,7 +33,7 @@ function condense (obj, scale) {
             const zone = (BigInt(top) / BigInt(scale)) | 0n
             // always use the `-` setup, even though we do the scale on 1 elsewhere.
             const bucket = `${zone*scale}-${zone*scale+scale}`
-            result[bucket] = addObject(result[bucket] || {}, obj[key])
+            result[bucket] = reduceObject(result[bucket] || {}, obj[key])
         } else {
             result[key] = obj[key]
         }
@@ -58,13 +66,13 @@ function createReducer (maxLength = 3, intervals = defaultIntervals, warn = fals
             const bucket = x
             intervalChanged = !obj[bucket]
             if (intervalChanged) nonInterval++
-            obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })            
+            obj[bucket] = reduceObject(obj[bucket] || {}, { count: 1, sum: y, sum2: y**2, min: y, max: y })            
         } 
         else {
             const zone = (BigInt(x instanceof Date ? x : x | 0) / BigInt(scale)) | 0n
             const bucket = BigInt(scale) === 1n && !floatDetected ? `${zone*scale}` : `${zone*scale}-${zone*scale+scale}`
             intervalChanged = !obj[bucket]
-            obj[bucket] = addObject(obj[bucket] || {}, { count: 1, sum: y })
+            obj[bucket] = reduceObject(obj[bucket] || {}, { count: 1, sum: y, sum2: y**2, min: y, max: y })
     
             if(!(x instanceof Date) && (x | 0) != x) {
                 intervalChanged = true
