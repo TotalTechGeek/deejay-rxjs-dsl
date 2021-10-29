@@ -1,15 +1,39 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "run-script-os",
+    "build:win32": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js",
+    "build:default": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js"
+  },
   "dependencies": {
     "@types/lodash": "^4.14.172",
     "date-fns": "^2.23.0",
     "expiry-map": "^1.1.0",
-    "json-logic-engine": "^1.1.5",
-    "json-power-query": "^1.1.8",
+    "json-logic-engine": "^1.1.11",
+    "json-power-query": "^1.1.13",
     "lodash": "^4.17.21",
     "rxjs": "^7.3.0"
-  }
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.24.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "exitzero": "^1.0.1",
+    "rollup": "^2.58.3",
+    "run-script-os": "^1.1.6",
+    "standard": "^16.0.4"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "type": "module"
 }
