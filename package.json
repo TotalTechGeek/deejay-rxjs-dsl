@@ -1,13 +1,13 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "prepublish": "npm run build",
     "build": "run-script-os",
-    "build:win32": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc cjs/index.js esm/index.js --declaration --allowJs --emitDeclarationOnly --target ESNext",
-    "build:default": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc cjs/index.js esm/index.js --declaration --allowJs --emitDeclarationOnly --target ESNext"
+    "build:win32": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext",
+    "build:default": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext"
   },
   "dependencies": {
     "@types/lodash": "^4.14.172",
@@ -36,5 +36,6 @@
       "require": "./dist/cjs/index.js"
     }
   },
-  "type": "module"
+  "type": "module",
+  "types": "./index.d.ts"
 }
