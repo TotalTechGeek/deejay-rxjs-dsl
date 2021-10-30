@@ -13,7 +13,7 @@ export default _default;
  * @returns {((...args) => any)[] | (...args) => any}
  */
 export function dsl(str: string, mode?: number): ((...args: any[]) => any)[] | ((...args: any[]) => any);
-export function generateCompiledLogic(str: any): any;
+export function generateCompiledLogic(str: any): Function;
 import { engine } from "./engine.js";
 export function generateLogic(str: any): any;
 export { engine };
