@@ -1,5 +1,5 @@
-import expiryMap from 'expiry-map'
-const ExpiryMap = expiryMap.default
+import ExpiryMap from 'expiry-map'
+
 const defaultIntervals = [30, 60, 60 * 5, 60 * 15, 60 * 30, 60 * 60, 60 * 60 * 2, 60 * 60 * 4, 60 * 60 * 8, 60 * 60 * 24, 60 * 60 * 24 * 3, 60 * 60 * 24 * 7, 60 * 60 * 24 * 30]
   .map(i => i * 1000)
 function scanIntervals (intervals) {

@@ -1,4 +1,4 @@
-import { toPairs, fromPairs, snakeCase, chunk } from 'lodash-es'
+import { toPairs, fromPairs, chunk } from 'lodash'
 import time from 'date-fns'
 import { LogicEngine, Compiler } from 'json-logic-engine'
 import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-query'
@@ -142,8 +142,6 @@ engine.addMethod('csvify', ([item, attributes]) => {
   return str
 }, { deterministic: true })
 
-engine.addMethod('snakeCase', snakeCase, { deterministic: true })
-
 function processBin (bin) {
   const variance = (bin.count * bin.sum2 - bin.sum) / (bin.count * (bin.count - 1))
   return {
@@ -261,10 +259,6 @@ function roundTime (time, period = 1, units = 's', end = false) {
 }
 engine.addMethod('time.roundDate', ([time, period, units, end]) => roundTime(time, period, units, end), { deterministic: true })
 engine.addMethod('time.round', ([time, period, units, end]) => roundTime(time, period, units, end).toISOString(), { deterministic: true })
-export { engine }
-export default {
-  engine
-}
 
 engine.methods.get.compile = function (data, buildState) {
   let defaultValue = null
@@ -280,4 +274,9 @@ engine.methods.get.compile = function (data, buildState) {
       .join('')} ?? ${JSON.stringify(defaultValue)})`
   }
   return false
+}
+
+export { engine }
+export default {
+  engine
 }

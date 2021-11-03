@@ -1,13 +1,13 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "prepublish": "npm run build",
     "build": "run-script-os",
-    "build:win32": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node",
-    "build:default": "rm -rf dist && rollup index.js --file dist/cjs/index.js --format cjs --exports named && rollup index.js --file dist/esm/index.js --format esm && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node"
+    "build:win32": "rm -rf dist && rollup index.js --config cjs.config.js && rollup index.js --config esm.config.js && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node",
+    "build:default": "rm -rf dist && rollup index.js --config cjs.config.js && rollup index.js --config esm.config.js && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node"
   },
   "dependencies": {
     "@types/lodash": "^4.14.172",
@@ -15,10 +15,11 @@
     "expiry-map": "^1.1.0",
     "json-logic-engine": "^1.1.13",
     "json-power-query": "^1.1.15",
-    "lodash-es": "^4.17.21",
+    "lodash": "^4.17.21",
     "rxjs": "^7.3.0"
   },
   "devDependencies": {
+    "@optimize-lodash/rollup-plugin": "^2.1.0",
     "cross-env": "^7.0.3",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.24.1",
