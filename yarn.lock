@@ -913,20 +913,20 @@ json-logic-engine@^1.1.11:
   resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.11.tgz#4492d76cd501105272fdb5de02b396ca3aa0eba9"
   integrity sha512-1dXIQYLjiyn0STvz1tFOkbjcW4CjPvDQ2ToLne4Vy6gujHGu0RsaMpm7uFvuP00Dja9IU2kZh1w2GwWbg9bg6g==
 
-json-logic-engine@^1.1.12:
-  version "1.1.12"
-  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.12.tgz#f598dcf17a866bb1991ee471b8a4b43e785ffd96"
-  integrity sha512-nMScT2LkOlDgInU6wY0IaqHZZNOTxrno//U+/9yApRphe74+GNVJayWheVVnuEUx28AYcwYSKLN/pppEXwa6Jw==
+json-logic-engine@^1.1.13:
+  version "1.1.13"
+  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.13.tgz#53fbe6cea342c23ec823a7a6fec2dc4878843fdd"
+  integrity sha512-2n1Uq5dQYyqSQWtS2xt7sT5vmA3kgfiRcMBCVwqSC9fLHlmxQvVnbu9VC+Q8aQreN1mOmbYtgumo0BCa56rVbg==
 
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"
   integrity sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==
 
-json-power-query@^1.1.13:
-  version "1.1.13"
-  resolved "https://registry.yarnpkg.com/json-power-query/-/json-power-query-1.1.13.tgz#a91159dd7cc7f0836f1ef9b8eda40d0723032bba"
-  integrity sha512-Lt2u1uA0SA02gmg8SoK+VfzJEAPSU6lDGJqG5/r6o2q9jZ0b30NfpQnOB9xkcX0+ssQh5JPY6PAu4kv2J+Hw6w==
+json-power-query@^1.1.15:
+  version "1.1.15"
+  resolved "https://registry.yarnpkg.com/json-power-query/-/json-power-query-1.1.15.tgz#b2f0fbeece7f815f9d5677c241c3a941f7024e01"
+  integrity sha512-3/73wBoOycjRFY3AQXy6hM+xv7U9whgxMgk+/An2JJKArXieAKQp8f3Vx8Tr3RzAKnuaz80rKwWEXLH00CqEmA==
   dependencies:
     json-logic-engine "^1.1.11"
 
@@ -1005,6 +1005,11 @@ locate-path@^3.0.0:
     p-locate "^3.0.0"
     path-exists "^3.0.0"
 
+lodash-es@^4.17.21:
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.21.tgz#43e626c46e6591b7750beb2b50117390c609e3ee"
+  integrity sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==
+
 lodash.clonedeep@^4.5.0:
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
@@ -1015,7 +1020,7 @@ lodash.truncate@^4.4.2:
   resolved "https://registry.yarnpkg.com/lodash.truncate/-/lodash.truncate-4.4.2.tgz#5a350da0b1113b837ecfffd5812cbe58d6eae193"
   integrity sha1-WjUNoLERO4N+z//VgSy+WNbq4ZM=
 
-lodash@^4.17.20, lodash@^4.17.21:
+lodash@^4.17.20:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { from, throttleTime, debounceTime } from 'rxjs'
+import { from, throttleTime, debounceTime, Observable } from 'rxjs'
 import { dsl, generateLogic, engine } from './index.js'
 
 function * gen (count = Infinity) {
@@ -12,11 +12,16 @@ function * gen (count = Infinity) {
 }
 
 console.time('Pipeline')
-from(gen(5.5e5)).pipe(...dsl(`
-        map merge(@, @.0 * @.1)
-        mergeMap toPairs(@)
-        reduce groupBy($.accumulator, $.current, $.0, aggregate($.accumulator, $.current.1), 0), 0
-    `)).subscribe({
+from(gen()).pipe(...dsl(` 
+  take 1000000
+  reduce groupBy($.accumulator, $.current, Math.floor($.0 / 10) * 10, aggregate($.accumulator, $.current.1), 0), {}
+  map each(processBins(@), $.average)
+  mergeMap toPairs(@)
+  filter @.0 > 20
+  map ({ x: 0 + @.0, y: @.1 })
+  sum @.x
+`)
+).subscribe({
   next: console.log,
   complete: () => {
     console.timeEnd('Pipeline')

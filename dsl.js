@@ -1,6 +1,14 @@
 
-import * as operators from 'rxjs/operators'
+import rxOps from 'rxjs/operators'
 import { engine } from './engine.js'
+import { mutateTraverse } from './mutateTraverse.js'
+import { bufferReduce } from './operators/bufferReduce.js'
+import { throttleReduce } from './operators/throttleReduce.js'
+import { average } from './operators/virtual/average.js'
+import { sum } from './operators/virtual/sum.js'
+
+const operators = { ...rxOps, throttleReduce, bufferReduce }
+const virtualOperators = { sum, average }
 
 // A not so great implementation of a formula parser.
 // I could've gone with an OTS library that supported this functionality, but to eliminate dependencies I just wanted to quickly throw something together.
@@ -26,15 +34,7 @@ const operatorFunctions = {
   '===': 'eeq',
   '!==': 'neeq'
 }
-function _mutateTraverse (obj, mut = i => i) {
-  if (!obj) { return obj }
-  for (const key in obj) {
-    if (typeof obj[key] === 'object') {
-      obj[key] = _mutateTraverse(obj[key], mut)
-    }
-  }
-  return mut(obj)
-}
+
 function invert (obj) {
   const result = {}
   for (const key in obj) {
@@ -46,6 +46,69 @@ const logicalOps = invert(operatorFunctions)
 logicalOps.or = 'or'
 logicalOps.and = 'and'
 logicalOps.In = 'in'
+
+function objectPrepass (str) {
+  let objCount = 0
+  let result = ''
+
+  let tokenStart = -1
+  let tokenEnd = -1
+
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '{') {
+      objCount++
+      result += 'obj('
+      continue
+    }
+
+    if (str[i] === '}') {
+      objCount--
+      result += ')'
+      continue
+    }
+
+    if (objCount) {
+      if (str[i] === ':') {
+        if (tokenStart !== -1) {
+          result = result.substring(0, tokenStart) + `"${result.substring(tokenStart, tokenEnd + 1)}"` + result.substring(tokenEnd + 1)
+        }
+        result += ','
+        tokenStart = -1
+        continue
+      }
+    }
+
+    result += str[i]
+
+    // if letter is A-Z or a-z
+    if (objCount && str[i].match(/[A-Za-z0-9_]/)) {
+      if (tokenStart === -1 && (str[i - 1] === ' ' || str[i - 1] === '{' || str[i - 1] === ',')) { tokenStart = result.length - 1 }
+      tokenEnd = result.length - 1
+    } else {
+      tokenStart = -1
+    }
+  }
+
+  // console.log(result)
+  return result
+}
+
+function listPrepass (str) {
+  let result = ''
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '[') {
+      result += 'list('
+      continue
+    }
+    if (str[i] === ']') {
+      result += ')'
+      continue
+    }
+    result += str[i]
+  }
+  return result
+}
+
 /**
  *
  * @param {string} str
@@ -92,8 +155,13 @@ function replace (str) {
       }
       parenthCount = 0
       let nextIndex = index + operator.length
+      if (str[nextIndex] === '(') parenthCount++
       while (nextIndex < str.length + 1 && /[$@.A-Za-z0-9_()^,'"#]/.exec(str[nextIndex + 1])) {
-        if (str[nextIndex + 1] === '(') { parenthCount++ } else if (str[nextIndex + 1] === ')') { parenthCount-- } else if (str[nextIndex + 1] === ',') {
+        if (str[nextIndex + 1] === '(') {
+          parenthCount++
+        } else if (str[nextIndex + 1] === ')') {
+          parenthCount--
+        } else if (str[nextIndex + 1] === ',') {
           if (!parenthCount) { break }
         }
         nextIndex++
@@ -110,7 +178,6 @@ function replace (str) {
       arr = operators.map(i => [i, str.indexOf(i)]).filter(i => i[1] !== -1).sort((a, b) => a[1] - b[1])
     }
   }
-  // console.log(str)
   return str
 }
 function splitOutsideParenthesis (str, splitter = ',') {
@@ -167,7 +234,7 @@ function toLogic (str, strings) {
     return { [logicalOps[head] || head]: toLogic(operands[0], strings) }
   }
   if (str.startsWith('@.')) {
-    return { var: str.replace(/\^\./g, '^').replace(/\.\^/g, '.../').substring(2) }
+    return { var: str.replace(/\^\./g, '^').replace(/\^/g, '../').substring(2) }
   } else if (str === '@') {
     return { var: '' }
   }
@@ -185,12 +252,19 @@ function toLogic (str, strings) {
   if (str.startsWith('#')) {
     return strings[+str.substring(1)]
   }
+
   if (str === 'null') {
     return null
   }
+
+  if (str === 'Infinity') {
+    return Infinity
+  }
+
   if (!str || str === 'undefined') {
     return undefined
   }
+
   throw new Error(`Not a valid query: ${str}`)
 }
 /**
@@ -240,13 +314,16 @@ function generateLogic (str) {
   const expr = /^[A-Za-z0-9, $@.!*<=>|$:_^(){}&'"-/?[\]%+\\]+$/
   if (expr.exec(str)) {
     const query = str.substring(0, str.length) // ?
-    const { text, strings } = removeStrings(query)
+    let { text, strings } = removeStrings(query)
+
+    text = listPrepass(objectPrepass(text))
+
     return toLogic(replace(text), strings)
   } else {
     throw new Error(`Not a valid query: ${str}`)
   }
 }
-const accumulators = new Set(['reduce', 'scan', 'mergeScan', 'switchScan'])
+const accumulators = new Set(['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce'])
 const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount'])
 /**
  * @param {keyof typeof operators} name
@@ -258,7 +335,7 @@ function buildOperator (name, logic, { n = 1, eval: evaluate = false, extra = []
   const operator = operators[name]
   if (n === 1) {
     if (accumulators.has(name)) {
-      _mutateTraverse(logic, i => {
+      mutateTraverse(logic, i => {
         if (typeof i.var !== 'undefined') {
           throw new Error('Do not use the typical "@" operator in a reducer. Use $.current and $.accumulator.')
         }
@@ -292,21 +369,42 @@ function generateCompiledLogic (str) {
  */
 function dsl (str, mode = 0) {
   if (str.indexOf('\n') !== -1 || str.indexOf(';') !== -1) {
-    return str.split(/\n|;/).filter(i => i.trim()).map(i => dsl(i, 0))
+    return str.split(/\n|;/).filter(i => i.trim()).flatMap(i => dsl(i, 0))
   }
   str = str.trim()
+
   if (str.startsWith('!')) {
     return dsl(str.substring(1), 1)
   }
+
   if (str.startsWith('#')) {
     return dsl(str.substring(1), 2)
   }
+
   const [head, ...tail] = str.split(' ')
   const rest = tail.join(' ')
   const [expression, ...extra] = splitOutsideParenthesis(rest).map(i => i.trim())
   const logic = generateLogic(expression)
+
+  let operators = [
+    [head, logic, extra]
+  ]
+
+  if (virtualOperators[head]) {
+    operators = virtualOperators[head](logic)
+  }
+
   // console.log(JSON.stringify({ [head]: logic }))
-  return buildOperator(head, logic, { n: mode === 1 ? 2 : 1, eval: mode === 2, extra: extra.map(JSON.parse) })
+
+  return operators.map(([head, logic, extra]) => {
+    return buildOperator(head, logic, {
+      n: mode === 1 ? 2 : 1,
+      eval: mode === 2,
+      extra: extra.map(i => {
+        return engine.run(generateLogic(i))
+      })
+    })
+  })
 }
 export { dsl }
 export { generateCompiledLogic }

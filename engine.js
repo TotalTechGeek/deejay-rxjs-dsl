@@ -1,14 +1,15 @@
-
-import _ from 'lodash'
+import { toPairs, fromPairs, snakeCase, chunk } from 'lodash-es'
 import time from 'date-fns'
 import { LogicEngine, Compiler } from 'json-logic-engine'
-import { queryBuilder, objectQueryBuilder } from 'json-power-query'
+import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-query'
 import { createReducer } from './bin.js'
+import { kjoin } from './joins.js'
+import { mutateTraverse } from './mutateTraverse.js'
 
 const { build, buildString } = Compiler
 const engine = new LogicEngine()
-const query = {
-  method: (path, obj) => {
+const aQuery = {
+  method: ([path, obj]) => {
     return queryBuilder(path)(obj)
   },
   compile: ([path, data], buildState) => {
@@ -16,6 +17,19 @@ const query = {
     return `methods[${buildState.methods.length - 1}](${buildString(data, buildState)})`
   }
 }
+engine.addMethod('aQuery', aQuery, { deterministic: true })
+
+const query = {
+  method: ([path, obj]) => {
+    return generatorBuilder(path)(obj)
+  },
+  compile: ([path, data], buildState) => {
+    buildState.methods.push(generatorBuilder(path))
+    return `methods[${buildState.methods.length - 1}](${buildString(data, buildState)})`
+  }
+}
+engine.addMethod('query', query, { deterministic: true })
+
 const objectQuery = {
   method: (path, obj) => {
     return objectQueryBuilder(JSON.parse(path))(obj)
@@ -29,45 +43,51 @@ const dynamicTimeBin = createReducer(10)
 engine.addMethod('dynamicTimeBin', ([a, b, size]) => dynamicTimeBin(a, b, size))
 const dynamicBin = createReducer(10, [1, 5, 10, 20, 100, 200, 1000, 5000, 10e3, 50e3, 100e3, 500e3, 1e6, 5e6, 10e6, 50e6, 100e6])
 engine.addMethod('dynamicBin', ([a, b, c]) => dynamicBin(a, b, c))
-engine.addMethod('toPairs', i => _.toPairs(i), { deterministic: true })
-engine.addMethod('fromPairs', i => _.fromPairs(i), { deterministic: true })
-engine.addMethod('from', ([key, value]) => _.fromPairs([[key, value]]), { deterministic: true })
+engine.addMethod('toPairs', i => toPairs(i), { deterministic: true })
+engine.addMethod('fromPairs', i => fromPairs(i), { deterministic: true })
+engine.addMethod('from', ([key, value]) => fromPairs([[key, value]]), { deterministic: true })
 engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), { deterministic: true })
 engine.addModule('Math', Math, { deterministic: true })
 engine.addMethod('split', ([i, splitter]) => i.split(splitter), { deterministic: true })
 engine.addMethod('objectQuery', objectQuery, { deterministic: true })
 engine.addMethod('aggregate', ([accumulator, current]) => {
-  if (!accumulator) { accumulator = { count: 0, sum: 0, sum2: 0, min: Number.MAX_VALUE, max: 0 } }
-  return {
-    count: accumulator.count + 1,
-    sum: accumulator.sum + current,
-    sum2: accumulator.sum2 + (current * current),
-    min: Math.min(accumulator.min, current),
-    max: Math.max(accumulator.max, current)
-  }
+  if (!accumulator) { accumulator = { count: 0, sum: 0, sum2: 0, min: Infinity, max: -Infinity } }
+
+  accumulator.count += 1
+  accumulator.sum += current
+  accumulator.sum2 += current ** 2
+  accumulator.min = Math.min(accumulator.min, current)
+  accumulator.max = Math.max(accumulator.max, current)
+
+  return accumulator
 })
 engine.addMethod('date', i => (i ? new Date(i) : new Date()))
 engine.addMethod('stringify', i => JSON.stringify(i), { deterministic: true })
 engine.addMethod('startsWith', ([a, b]) => ('' + a).startsWith(b), { deterministic: true })
 engine.addMethod('first', i => i[0], { deterministic: true })
 engine.addMethod('last', i => i[i.length - 1], { deterministic: true })
-engine.addMethod('query', query, { deterministic: true })
-engine.addMethod('list', i => [].concat(i), { deterministic: true })
+engine.addMethod('kjoin', (data) => kjoin(...data), { deterministic: true })
+engine.addMethod('list', {
+  method: i => i ? [].concat(i) : [],
+  deterministic: true,
+  traverse: true
+  // compile: ([data, buildState]) => {
+  //   if (!data) return '([])'
+  //   data = [].concat(data)
+  //   const items = data.map(item => {
+  //     return `${buildString(item, buildState)}`
+  //   })
+  //   return `([ ${items.join(', ')} ])`
+  // }
+})
+
 engine.addMethod('overwrite', {
   method: ([obj, name, value], context, above, engine) => {
     return ({ ...obj, [name]: value })
   },
   traverse: true
 })
-function mutateTraverse (obj, mut = i => i) {
-  if (!obj) { return obj }
-  for (const key in obj) {
-    if (typeof obj[key] === 'object') {
-      obj[key] = mutateTraverse(obj[key], mut)
-    }
-  }
-  return mut(obj)
-}
+
 engine.addMethod('each', {
   method: ([obj, transform], context, above, engine) => {
     obj = engine.run(obj, context, { above })
@@ -122,7 +142,7 @@ engine.addMethod('csvify', ([item, attributes]) => {
   return str
 }, { deterministic: true })
 
-engine.addMethod('snakeCase', _.snakeCase, { deterministic: true })
+engine.addMethod('snakeCase', snakeCase, { deterministic: true })
 
 function processBin (bin) {
   const variance = (bin.count * bin.sum2 - bin.sum) / (bin.count * (bin.count - 1))
@@ -144,16 +164,26 @@ engine.addMethod('processBins', bins => {
   }
   return result
 }, { deterministic: true })
-engine.addMethod('xy', ([x, y]) => ({ x, y }))
-const everyOther = (arr, i = -1) => _.partition(arr, () => i++ % 2)
+engine.addMethod('xy', {
+  method: ([x, y]) => ({ x, y }),
+  traverse: true,
+  compile: (data, buildState) => {
+    const x = buildString(data[0], buildState)
+    const y = buildString(data[1], buildState)
+    return `({ x: ${x}, y: ${y} })`
+  }
+})
 engine.addMethod('obj', {
-  method: (items) => _.zipObject(...everyOther([].concat(items))),
+  method: (items) => {
+    return items ? chunk(items, 2).reduce((accumulator, [variable, value]) => ({ ...accumulator, [variable]: value }), {}) : {}
+  },
   traverse: true,
   deterministic: true,
   compile: (data, buildState) => {
+    if (!data) return '({})'
     data = [].concat(data)
     if (!data.length % 2) { return false }
-    const items = _.chunk(data, 2).map(([variable, item]) => {
+    const items = chunk(data, 2).map(([variable, item]) => {
       return `[${buildString(variable, buildState)}]: ${buildString(item, buildState)}`
     })
     return `({ ${items.join(', ')} })`
@@ -234,4 +264,20 @@ engine.addMethod('time.round', ([time, period, units, end]) => roundTime(time, p
 export { engine }
 export default {
   engine
+}
+
+engine.methods.get.compile = function (data, buildState) {
+  let defaultValue = null
+  let key = data
+  let obj = null
+  if (Array.isArray(data) && data.length <= 3) {
+    obj = data[0]
+    key = data[1]
+    defaultValue = typeof data[2] === 'undefined' ? null : data[2]
+    const pieces = typeof key === 'string' ? key.split('.').map(i => JSON.stringify(i)) : [buildString(key, buildState)]
+    return `((${buildString(obj, buildState)})${pieces
+      .map((i) => `?.[${i}]`)
+      .join('')} ?? ${JSON.stringify(defaultValue)})`
+  }
+  return false
 }
