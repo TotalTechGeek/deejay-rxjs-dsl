@@ -1,4 +1,4 @@
-import { toPairs, fromPairs, chunk } from 'lodash'
+import { splitEvery } from 'ramda'
 import time from 'date-fns'
 import { LogicEngine, Compiler } from 'json-logic-engine'
 import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-query'
@@ -43,9 +43,9 @@ const dynamicTimeBin = createReducer(10)
 engine.addMethod('dynamicTimeBin', ([a, b, size]) => dynamicTimeBin(a, b, size))
 const dynamicBin = createReducer(10, [1, 5, 10, 20, 100, 200, 1000, 5000, 10e3, 50e3, 100e3, 500e3, 1e6, 5e6, 10e6, 50e6, 100e6])
 engine.addMethod('dynamicBin', ([a, b, c]) => dynamicBin(a, b, c))
-engine.addMethod('toPairs', i => toPairs(i), { deterministic: true })
-engine.addMethod('fromPairs', i => fromPairs(i), { deterministic: true })
-engine.addMethod('from', ([key, value]) => fromPairs([[key, value]]), { deterministic: true })
+engine.addMethod('toPairs', i => Object.entries(i), { deterministic: true })
+engine.addMethod('fromPairs', i => Object.fromEntries(i), { deterministic: true })
+engine.addMethod('from', ([key, value]) => Object.fromEntries([[key, value]]), { deterministic: true })
 engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), { deterministic: true })
 engine.addModule('Math', Math, { deterministic: true })
 engine.addMethod('split', ([i, splitter]) => i.split(splitter), { deterministic: true })
@@ -173,7 +173,7 @@ engine.addMethod('xy', {
 })
 engine.addMethod('obj', {
   method: (items) => {
-    return items ? chunk(items, 2).reduce((accumulator, [variable, value]) => ({ ...accumulator, [variable]: value }), {}) : {}
+    return items ? splitEvery(2, items).reduce((accumulator, [variable, value]) => ({ ...accumulator, [variable]: value }), {}) : {}
   },
   traverse: true,
   deterministic: true,
@@ -181,7 +181,7 @@ engine.addMethod('obj', {
     if (!data) return '({})'
     data = [].concat(data)
     if (!data.length % 2) { return false }
-    const items = chunk(data, 2).map(([variable, item]) => {
+    const items = splitEvery(2, data).map(([variable, item]) => {
       return `[${buildString(variable, buildState)}]: ${buildString(item, buildState)}`
     })
     return `({ ${items.join(', ')} })`

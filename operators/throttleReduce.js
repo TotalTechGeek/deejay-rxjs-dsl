@@ -1,4 +1,4 @@
-import { throttle } from 'lodash'
+import throttle from 'lodash.throttle'
 import { Observable } from 'rxjs'
 
 export const throttleReduce = (reducer, initial, { time = 1000, leading = false, trailing = true } = {}) => source => new Observable(observer => {

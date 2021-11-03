@@ -1,6 +1,6 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -15,12 +15,11 @@
     "expiry-map": "^1.1.0",
     "json-logic-engine": "^1.1.13",
     "json-power-query": "^1.1.15",
-    "lodash": "^4.17.21",
-    "lodash-es": "^4.17.21",
+    "lodash.throttle": "^4.1.1",
+    "ramda": "^0.27.1",
     "rxjs": "^7.3.0"
   },
   "devDependencies": {
-    "@optimize-lodash/rollup-plugin": "^2.1.0",
     "cross-env": "^7.0.3",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.24.1",

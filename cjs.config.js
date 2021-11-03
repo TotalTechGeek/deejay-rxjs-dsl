@@ -1,5 +1,3 @@
-import { optimizeLodashImports } from '@optimize-lodash/rollup-plugin'
-
 export default {
   input: 'src/index.js',
   output: {
@@ -7,5 +5,5 @@ export default {
     format: 'cjs'
   },
   exports: 'named',
-  plugins: [optimizeLodashImports()]
+  plugins: []
 }
