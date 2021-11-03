@@ -9,6 +9,6 @@ export default {
   exports: 'named',
   plugins: [optimizeLodashImports({
     // explore this in the future upon further research
-    // useLodashEs: true
+    useLodashEs: true
   })]
 }

@@ -1,6 +1,6 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -16,6 +16,7 @@
     "json-logic-engine": "^1.1.13",
     "json-power-query": "^1.1.15",
     "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21",
     "rxjs": "^7.3.0"
   },
   "devDependencies": {
