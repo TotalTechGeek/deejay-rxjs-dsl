@@ -1,5 +1,6 @@
 
 import rxOps from 'rxjs/operators'
+import { merge, zip, race, concat } from 'rxjs'
 import { engine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
 import { bufferReduce } from './operators/bufferReduce.js'
@@ -9,6 +10,7 @@ import { sum } from './operators/virtual/sum.js'
 
 const operators = { ...rxOps, throttleReduce, bufferReduce }
 const virtualOperators = { sum, average }
+const joinOperators = { merge, zip, race, concat }
 
 // A not so great implementation of a formula parser.
 // I could've gone with an OTS library that supported this functionality, but to eliminate dependencies I just wanted to quickly throw something together.
@@ -46,6 +48,38 @@ const logicalOps = invert(operatorFunctions)
 logicalOps.or = 'or'
 logicalOps.and = 'and'
 logicalOps.In = 'in'
+
+// get the text within parenthesis.
+function getWithinParenthesis (str) {
+  const result = []
+
+  // todo: make work with strings :)
+
+  let cur = ''
+  let parenthCount = 0
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '(') {
+      parenthCount++
+      if (parenthCount === 1) continue
+    }
+
+    if (str[i] === ')') {
+      parenthCount--
+      if (parenthCount === 0) continue
+    }
+
+    if (parenthCount) {
+      cur += str[i]
+    }
+
+    if (!parenthCount && cur) {
+      result.push(cur)
+      cur = ''
+    }
+  }
+
+  return result
+}
 
 function objectPrepass (str) {
   let objCount = 0
@@ -361,7 +395,7 @@ function generateLogic (str) {
   }
 }
 const accumulators = new Set(['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce'])
-const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount'])
+const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime'])
 /**
  * @param {keyof typeof operators} name
  * @param {*} logic
@@ -413,8 +447,6 @@ function dsl (str, mode = 0, substitutions = {}) {
 
     while (line) {
       if (line.endsWith('>>')) {
-        result.push(...dsl(line.substring(0, line.length - 2), 0))
-
         let blockCount = 0
         // grab the lines
         const dslLines = [lines.shift()]
@@ -424,18 +456,30 @@ function dsl (str, mode = 0, substitutions = {}) {
           if (dslLines[dslLines.length - 1].startsWith('<<')) blockCount--
           dslLines.push(lines.shift())
         }
-        dslLines.pop()
 
-        result.push(rxOps.map(group => {
-          return group.pipe(
-            ...dsl(`${dslLines.join(';')};`, 0, {
-              '@group': group.key
+        if (line.startsWith('fork')) {
+          const streams = getWithinParenthesis(dslLines.join(';'))
+          const word = line.split(' ')[1]
+          let operation = merge
+          if (word in joinOperators) operation = joinOperators[word]
+          result.push(rxOps.connect(i => operation(
+            ...streams.map(query => {
+              return i.pipe(...dsl(`${query};`, 0, substitutions))
             })
-          )
-        }))
-
-        // todo: Allow other forms of merging.
-        result.push(rxOps.mergeAll())
+          )))
+        } else {
+          result.push(...dsl(line.substring(0, line.length - 2), 0, substitutions))
+          const combineOperation = dslLines.pop().split(' ')[1] || 'mergeAll'
+          result.push(rxOps.map(group => {
+            return group.pipe(
+              ...dsl(`${dslLines.join(';')};`, 0, {
+                ...substitutions,
+                '@group': group.key
+              })
+            )
+          }))
+          result.push(rxOps[combineOperation]())
+        }
       } else {
         result.push(...dsl(line, 0, substitutions))
       }
