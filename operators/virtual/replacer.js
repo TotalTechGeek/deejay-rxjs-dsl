@@ -15,7 +15,8 @@ export const mutateLogic = (logic) => {
 
   if (needsMutated) {
     return mutateTraverse(logic, i => {
-      if (i.var) {
+      if (typeof i.var !== 'undefined') {
+        if (!i.var) return { context: 'current' }
         return {
           context: `current.${i.var}`
         }

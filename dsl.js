@@ -89,7 +89,6 @@ function objectPrepass (str) {
     }
   }
 
-  // console.log(result)
   return result
 }
 
@@ -180,7 +179,18 @@ function replace (str) {
   }
   return str
 }
-function splitOutsideParenthesis (str, splitter = ',') {
+function splitOutsideParenthesis (str, splitters = ',', check = false) {
+  if (!Array.isArray(splitters)) splitters = [splitters]
+  if (!splitters.length) throw new Error('No delimiters specified')
+
+  splitters = splitters.map(i => {
+    return {
+      text: i.text || i,
+      keep: i.keep || false,
+      next: i.next || false
+    }
+  })
+
   const result = []
   let cur = ''
   let parenth = 0
@@ -196,14 +206,28 @@ function splitOutsideParenthesis (str, splitter = ',') {
       if (str[i] === '"' && quoteMode === '"') { quoteMode = false }
       if (str[i] === "'" && quoteMode === "'") { quoteMode = false }
     }
-    if (str[i] === splitter && !parenth && !quoteMode) {
+
+    const splitter = splitters.find(splitter => str.substr(i, splitter.text.length) === splitter.text)
+    if (splitter && !parenth && !quoteMode) {
+      if (check) return true
       result.push(cur)
       cur = ''
-    } else {
-      cur += str[i]
+      i += splitter.text.length - 1
+      if (splitter.keep) {
+        if (splitter.next) {
+          cur += splitter.text
+        } else {
+          result[result.length - 1] += splitter.text
+        }
+      }
+      continue
     }
+
+    cur += str[i]
   }
   result.push(cur)
+
+  if (check) return false
   return result
 }
 /**
@@ -233,22 +257,35 @@ function toLogic (str, strings) {
     }
     return { [logicalOps[head] || head]: toLogic(operands[0], strings) }
   }
+
   if (str.startsWith('@.')) {
     return { var: str.replace(/\^\./g, '^').replace(/\^/g, '../').substring(2) }
-  } else if (str === '@') {
+  }
+
+  if (str === '@') {
     return { var: '' }
   }
+
+  if (str === '@group') {
+    return { '@group': '' }
+  }
+
   if (str.startsWith('$.')) {
     return { context: str.substring(2) }
-  } else if (str === '$') {
+  }
+
+  if (str === '$') {
     return { context: '' }
   }
+
   if (str === 'true' || str === 'false') {
     return str === 'true'
   }
+
   if ((str.startsWith('\'') && str.endsWith('\'')) || (str.startsWith('"') && str.endsWith('"'))) {
     return str.substring(1, str.length - 1)
   }
+
   if (str.startsWith('#')) {
     return strings[+str.substring(1)]
   }
@@ -311,7 +348,7 @@ function removeStrings (str) {
 }
 
 function generateLogic (str) {
-  const expr = /^[A-Za-z0-9, $@.!*<=>|$:_^(){}&'"-/?[\]%+\\]+$/
+  const expr = /^[A-Za-z0-9, $@.!*<=>|$:_^();{}&'"-/?[\]%+\\]+$/
   if (expr.exec(str)) {
     const query = str.substring(0, str.length) // ?
     let { text, strings } = removeStrings(query)
@@ -367,24 +404,71 @@ function generateCompiledLogic (str) {
  * @param {string} str
  * @returns {((...args) => any)[] | (...args) => any}
  */
-function dsl (str, mode = 0) {
-  if (str.indexOf('\n') !== -1 || str.indexOf(';') !== -1) {
-    return str.split(/\n|;/).filter(i => i.trim()).flatMap(i => dsl(i, 0))
+function dsl (str, mode = 0, substitutions = {}) {
+  if (splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }], true)) {
+    const result = []
+    const lines = splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }]).map(i => i.trim()).filter(i => i)
+
+    let line = lines.shift()
+
+    while (line) {
+      if (line.endsWith('>>')) {
+        result.push(...dsl(line.substring(0, line.length - 2), 0))
+
+        let blockCount = 0
+        // grab the lines
+        const dslLines = [lines.shift()]
+
+        while (!dslLines[dslLines.length - 1].startsWith('<<') || blockCount) {
+          if (dslLines[dslLines.length - 1].endsWith('>>')) blockCount++
+          if (dslLines[dslLines.length - 1].startsWith('<<')) blockCount--
+          dslLines.push(lines.shift())
+        }
+        dslLines.pop()
+
+        result.push(rxOps.map(group => {
+          return group.pipe(
+            ...dsl(`${dslLines.join(';')};`, 0, {
+              '@group': group.key
+            })
+          )
+        }))
+
+        // todo: Allow other forms of merging.
+        result.push(rxOps.mergeAll())
+      } else {
+        result.push(...dsl(line, 0, substitutions))
+      }
+
+      line = lines.shift()
+    }
+
+    return result
   }
   str = str.trim()
 
   if (str.startsWith('!')) {
-    return dsl(str.substring(1), 1)
+    return dsl(str.substring(1), 1, substitutions)
   }
 
   if (str.startsWith('#')) {
-    return dsl(str.substring(1), 2)
+    return dsl(str.substring(1), 2, substitutions)
   }
 
   const [head, ...tail] = str.split(' ')
   const rest = tail.join(' ')
   const [expression, ...extra] = splitOutsideParenthesis(rest).map(i => i.trim())
-  const logic = generateLogic(expression)
+
+  const logic = mutateTraverse(generateLogic(expression), i => {
+    if (i && typeof i === 'object') {
+      for (const k in substitutions) {
+        if (k in i) {
+          return substitutions[k]
+        }
+      }
+    }
+    return i
+  })
 
   let operators = [
     [head, logic, extra]

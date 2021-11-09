@@ -14,11 +14,8 @@ function * gen (count = Infinity) {
 console.time('Pipeline')
 from(gen()).pipe(...dsl(` 
   take 1000000
-  reduce groupBy($.accumulator, $.current, Math.floor($.0 / 10) * 10, aggregate($.accumulator, $.current.1), 0), {}
-  map each(processBins(@), $.average)
-  mergeMap toPairs(@)
-  filter @.0 > 20
-  map ({ x: 0 + @.0, y: @.1 })
+  groupBy Math.floor(@.0 / 10) * 10 >> average @.1; map ({ x: @group, y: @ }) <<
+  filter @.x > 20
   sum @.x
 `)
 ).subscribe({
