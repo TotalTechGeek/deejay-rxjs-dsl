@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
-import { from, throttleTime, debounceTime, Observable } from 'rxjs'
-import { dsl, generateLogic, engine } from './index.js'
+import { from, throttleTime, debounceTime, Observable, pipe, map } from 'rxjs'
+import { dsl, generateLogic } from './index.js'
 
 function * gen (count = Infinity) {
   let i = 0
@@ -14,7 +14,8 @@ function * gen (count = Infinity) {
 console.time('Pipeline')
 from(gen()).pipe(...dsl(` 
   take 1000000
-  groupBy Math.floor(@.0 / 10) * 10 >> average @.1; map ({ x: @group, y: @ }) <<
+  reduce groupBy($.accumulator, $.current, Math.floor($.0 / 10) * 10, aggregate($.accumulator, $.current.1), 0), {}
+  mergeMap map(toPairs(@), { x: @.0, y: @.1 })
   filter @.x > 20
   sum @.x
 `)

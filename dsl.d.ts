@@ -1,7 +1,5 @@
 declare namespace _default {
     export { dsl };
-    export { generateCompiledLogic };
-    export { engine };
     export { generateLogic };
 }
 export default _default;
@@ -10,10 +8,13 @@ export default _default;
  * in an RxJS pipeline.
  *
  * @param {string} str
+ * @param {{ engine?: import('json-logic-engine').LogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
  * @returns {((...args) => any)[] | (...args) => any}
  */
-export function dsl(str: string, mode?: number): ((...args: any[]) => any)[] | ((...args: any[]) => any);
-export function generateCompiledLogic(str: any): Function;
-import { engine } from "./engine.js";
+export function dsl(str: string, { mode, substitutions, engine, additionalOperators }?: {
+    engine?: import('json-logic-engine').LogicEngine;
+    substitutions?: any;
+    additionalOperators?: any;
+    mode?: number;
+}): ((...args: any[]) => any)[] | ((...args: any[]) => any);
 export function generateLogic(str: any): any;
-export { engine };

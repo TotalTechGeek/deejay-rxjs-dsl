@@ -1,15 +1,17 @@
 
 import rxOps from 'rxjs/operators'
 import { merge, zip, race, concat } from 'rxjs'
-import { engine } from './engine.js'
+import { setupEngine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
 import { bufferReduce } from './operators/bufferReduce.js'
 import { throttleReduce } from './operators/throttleReduce.js'
 import { average } from './operators/virtual/average.js'
 import { sum } from './operators/virtual/sum.js'
+import { LogicEngine } from 'json-logic-engine'
+import { toObject } from './operators/virtual/toObject.js'
 
 const operators = { ...rxOps, throttleReduce, bufferReduce }
-const virtualOperators = { sum, average }
+const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
 // A not so great implementation of a formula parser.
@@ -383,7 +385,7 @@ function removeStrings (str) {
 
 function generateLogic (str) {
   const expr = /^[A-Za-z0-9, $@.!*<=>|$:_^();{}&'"-/?[\]%+\\]+$/
-  if (expr.exec(str)) {
+  if (expr.exec(str) || !str) {
     const query = str.substring(0, str.length) // ?
     let { text, strings } = removeStrings(query)
 
@@ -402,8 +404,8 @@ const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTi
  * @param {number} n
  * @returns {Function}
  */
-function buildOperator (name, logic, { n = 1, eval: evaluate = false, extra = [] } = {}) {
-  const operator = operators[name]
+function buildOperator (name, logic, { n = 1, eval: evaluate = false, extra = [], engine, ops = operators } = {}) {
+  const operator = ops[name]
   if (n === 1) {
     if (accumulators.has(name)) {
       mutateTraverse(logic, i => {
@@ -426,19 +428,23 @@ function buildOperator (name, logic, { n = 1, eval: evaluate = false, extra = []
   if (evaluate) { f = f() }
   return operator((...args) => f(args), ...extra)
 }
-function generateCompiledLogic (str) {
-  const logic = generateLogic(str)
-  // console.log(logic)
-  return engine.build(logic)
-}
+
+const defaultEngine = setupEngine(new LogicEngine())
+
 /**
  * Takes in the instructions from the dsl and generates functions to be used
  * in an RxJS pipeline.
  *
  * @param {string} str
+ * @param {{ engine?: import('json-logic-engine').LogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
  * @returns {((...args) => any)[] | (...args) => any}
  */
-function dsl (str, mode = 0, substitutions = {}) {
+function dsl (str, {
+  mode = 0,
+  substitutions = {},
+  engine = defaultEngine,
+  additionalOperators = {}
+} = {}) {
   if (splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }], true)) {
     const result = []
     const lines = splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }]).map(i => i.trim()).filter(i => i)
@@ -464,24 +470,29 @@ function dsl (str, mode = 0, substitutions = {}) {
           if (word in joinOperators) operation = joinOperators[word]
           result.push(rxOps.connect(i => operation(
             ...streams.map(query => {
-              return i.pipe(...dsl(`${query};`, 0, substitutions))
+              return i.pipe(...dsl(`${query};`, { mode: 0, substitutions, additionalOperators, engine }))
             })
           )))
         } else {
-          result.push(...dsl(line.substring(0, line.length - 2), 0, substitutions))
+          result.push(...dsl(line.substring(0, line.length - 2), { mode: 0, substitutions, additionalOperators, engine }))
           const combineOperation = dslLines.pop().split(' ')[1] || 'mergeAll'
           result.push(rxOps.map(group => {
             return group.pipe(
-              ...dsl(`${dslLines.join(';')};`, 0, {
-                ...substitutions,
-                '@group': group.key
+              ...dsl(`${dslLines.join(';')};`, {
+                mode: 0,
+                substitutions: {
+                  ...substitutions,
+                  '@group': group.key
+                },
+                engine,
+                additionalOperators
               })
             )
           }))
           result.push(rxOps[combineOperation]())
         }
       } else {
-        result.push(...dsl(line, 0, substitutions))
+        result.push(...dsl(line, { mode: 0, substitutions, engine, additionalOperators }))
       }
 
       line = lines.shift()
@@ -489,14 +500,15 @@ function dsl (str, mode = 0, substitutions = {}) {
 
     return result
   }
+
   str = str.trim()
 
   if (str.startsWith('!')) {
-    return dsl(str.substring(1), 1, substitutions)
+    return dsl(str.substring(1), { mode: 1, substitutions, engine, additionalOperators })
   }
 
   if (str.startsWith('#')) {
-    return dsl(str.substring(1), 2, substitutions)
+    return dsl(str.substring(1), { mode: 2, substitutions, engine, additionalOperators })
   }
 
   const [head, ...tail] = str.split(' ')
@@ -514,33 +526,32 @@ function dsl (str, mode = 0, substitutions = {}) {
     return i
   })
 
-  let operators = [
+  let logicOperators = [
     [head, logic, extra]
   ]
 
   if (virtualOperators[head]) {
-    operators = virtualOperators[head](logic)
+    logicOperators = virtualOperators[head](logic)
   }
 
   // console.log(JSON.stringify({ [head]: logic }))
 
-  return operators.map(([head, logic, extra]) => {
+  return logicOperators.map(([head, logic, extra]) => {
     return buildOperator(head, logic, {
       n: mode === 1 ? 2 : 1,
       eval: mode === 2,
+      engine,
+      ops: { ...additionalOperators, ...operators },
       extra: extra.map(i => {
         return engine.run(generateLogic(i))
       })
     })
   })
 }
+
 export { dsl }
-export { generateCompiledLogic }
-export { engine }
 export { generateLogic }
 export default {
   dsl,
-  generateCompiledLogic,
-  engine,
   generateLogic
 }
