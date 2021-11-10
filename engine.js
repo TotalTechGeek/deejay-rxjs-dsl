@@ -69,7 +69,14 @@ function setupEngine (engine) {
   engine.addMethod('from', ([key, value]) => Object.fromEntries([[key, value]]), { deterministic: true })
   engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), { deterministic: true })
   engine.addModule('Math', Math, { deterministic: true })
-  engine.addMethod('split', ([i, splitter]) => i.split(splitter), { deterministic: true })
+  engine.addMethod('split', ([i, splitter]) => ('' + i).split(splitter || ''), { deterministic: true })
+  engine.addMethod('join', data => {
+    if (Array.isArray(data[0])) {
+      const [arr, splitter] = data
+      return arr.join(splitter || '')
+    }
+    return data.join('')
+  }, { deterministic: true })
   engine.addMethod('objectQuery', objectQuery, { deterministic: true })
   engine.addMethod('aggregate', ([accumulator, current]) => {
     if (!accumulator) { accumulator = { count: 0, sum: 0, sum2: 0, min: Infinity, max: -Infinity } }
