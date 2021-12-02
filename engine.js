@@ -1,5 +1,5 @@
 import { splitEvery } from 'ramda'
-import time from 'date-fns'
+import * as time from 'date-fns'
 import { Compiler } from 'json-logic-engine'
 import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-query'
 import { createReducer } from './bin.js'

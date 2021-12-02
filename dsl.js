@@ -1,5 +1,5 @@
 
-import rxOps from 'rxjs/operators'
+import * as rxOps from 'rxjs/operators'
 import { merge, zip, race, concat } from 'rxjs'
 import { setupEngine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
