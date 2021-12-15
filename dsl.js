@@ -515,7 +515,7 @@ function dsl (str, {
   const rest = tail.join(' ')
   const [expression, ...extra] = splitOutsideParenthesis(rest).map(i => i.trim())
 
-  const logic = mutateTraverse(generateLogic(expression), i => {
+  const substitutionLogic = expression => mutateTraverse(generateLogic(expression), i => {
     if (i && typeof i === 'object') {
       for (const k in substitutions) {
         if (k in i) {
@@ -525,6 +525,8 @@ function dsl (str, {
     }
     return i
   })
+
+  const logic = substitutionLogic(expression)
 
   let logicOperators = [
     [head, logic, extra]
@@ -543,7 +545,7 @@ function dsl (str, {
       engine,
       ops: { ...additionalOperators, ...operators },
       extra: extra.map(i => {
-        return engine.run(generateLogic(i))
+        return engine.run(substitutionLogic(i))
       })
     })
   })
