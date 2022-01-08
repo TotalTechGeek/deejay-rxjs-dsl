@@ -155,7 +155,7 @@ function setupEngine (engine) {
   })
 
   engine.addMethod('list', {
-    method: i => i ? [i] : [],
+    method: i => i ? [].concat(i) : [],
     deterministic: true,
     traverse: true
   })
