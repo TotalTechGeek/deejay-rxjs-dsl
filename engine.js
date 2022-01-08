@@ -1,4 +1,5 @@
-import { splitEvery } from 'ramda'
+import { splitEvery, xprod, omit, pick, type } from 'ramda'
+import { isArray, isBoolean, isDate, isFalse, isFalsy, isNumber, isInteger, isIterable, isObject, isFinite, isNull, isValidDate, isUndefined, isString, isTruthy } from 'ramda-adjunct'
 import * as time from 'date-fns'
 import { Compiler } from 'json-logic-engine'
 import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-query'
@@ -70,6 +71,25 @@ function setupEngine (engine) {
   engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), { deterministic: true })
   engine.addModule('Math', Math, { deterministic: true })
   engine.addMethod('split', ([i, splitter]) => ('' + i).split(splitter || ''), { deterministic: true })
+  engine.addMethod('xprod', data => xprod(...[].concat(data)), { deterministic: true })
+  engine.addMethod('omit', ([obj, keys]) => omit(keys, obj), { deterministic: true })
+  engine.addMethod('pick', ([obj, keys]) => pick(keys, obj), { deterministic: true })
+  engine.addMethod('type', i => type(i), { deterministic: true })
+  engine.addMethod('isArray', i => isArray(i), { deterministic: true })
+  engine.addMethod('isBoolean', i => isBoolean(i), { deterministic: true })
+  engine.addMethod('isDate', i => isDate(i), { deterministic: true })
+  engine.addMethod('isFalsy', i => isFalsy(i), { deterministic: true })
+  engine.addMethod('isTruthy', i => isTruthy(i), { deterministic: true })
+  engine.addMethod('isFinite', i => isFinite(i), { deterministic: true })
+  engine.addMethod('isFalse', i => isFalse(i), { deterministic: true })
+  engine.addMethod('isInteger', i => isInteger(i), { deterministic: true })
+  engine.addMethod('isIterable', i => isIterable(i), { deterministic: true })
+  engine.addMethod('isNull', i => isNull(i), { deterministic: true })
+  engine.addMethod('isNumber', i => isNumber(i), { deterministic: true })
+  engine.addMethod('isObject', i => isObject(i), { deterministic: true })
+  engine.addMethod('isUndefined', i => isUndefined(i), { deterministic: true })
+  engine.addMethod('isString', i => isString(i), { deterministic: true })
+  engine.addMethod('isValidDate', i => isValidDate(i), { deterministic: true })
   engine.addMethod('join', data => {
     if (Array.isArray(data[0])) {
       const [arr, splitter] = data
@@ -95,18 +115,49 @@ function setupEngine (engine) {
   engine.addMethod('first', i => i[0], { deterministic: true })
   engine.addMethod('last', i => i[i.length - 1], { deterministic: true })
   engine.addMethod('kjoin', (data) => kjoin(...data), { deterministic: true })
+
+  engine.addMethod('match', {
+    method: data => {
+      // 0 is the variable,
+      // odds are the comparisons it should be equal to,
+      // evens are the values
+
+      const variable = data[0]
+      const options = data.slice(1)
+
+      if (options.length % 2 !== 1) {
+        throw new Error('Match statement lacks the correct arguments.')
+      }
+
+      for (let i = 0; i < options.length; i += 2) {
+        if (options[i] === variable) return options[i + 1]
+      }
+
+      return options[options.length - 1]
+    },
+    compile: (data, buildState) => {
+      const variable = data[0]
+      const options = data.slice(1)
+      const def = options.pop()
+
+      if (options.length % 2) {
+        throw new Error('Match statement lacks the correct arguments.')
+      }
+
+      const cases = splitEvery(2, options)
+        .map(([name, value]) => `case ${buildString(name, buildState)}: return ${buildString(value, buildState)};`)
+        .join('\n')
+
+      return `((() => { switch (${buildString(variable, buildState)}) { ${cases} default: return ${buildString(def, buildState)}; } })())`
+    },
+    traverse: true,
+    deterministic: true
+  })
+
   engine.addMethod('list', {
-    method: i => i ? [].concat(i) : [],
+    method: i => i ? [i] : [],
     deterministic: true,
     traverse: true
-  // compile: ([data, buildState]) => {
-  //   if (!data) return '([])'
-  //   data = [].concat(data)
-  //   const items = data.map(item => {
-  //     return `${buildString(item, buildState)}`
-  //   })
-  //   return `([ ${items.join(', ')} ])`
-  // }
   })
   engine.addMethod('overwrite', {
     method: ([obj, name, value], context, above, engine) => {
@@ -158,15 +209,6 @@ function setupEngine (engine) {
     traverse: false,
     useContext: true
   })
-  engine.addMethod('csvify', ([item, attributes]) => {
-    const attrs = attributes.split(',')
-    let str = ''
-    for (const attr of attrs) {
-      if (str) { str += ',' }
-      str += `"${(typeof item[attr] === 'undefined' ? '' : item[attr]).toString().replace(/"/g, '""')}"`
-    }
-    return str
-  }, { deterministic: true })
 
   function processBin (bin) {
     const variance = (bin.count * bin.sum2 - bin.sum) / (bin.count * (bin.count - 1))

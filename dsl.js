@@ -243,6 +243,8 @@ function splitOutsideParenthesis (str, splitters = ',', check = false) {
       if (str[i] === "'" && quoteMode === "'") { quoteMode = false }
     }
 
+    if (parenth < 0) throw new Error('Bad Expression: Negative Parenthesis')
+
     const splitter = splitters.find(splitter => str.substr(i, splitter.text.length) === splitter.text)
     if (splitter && !parenth && !quoteMode) {
       if (check) return true
@@ -263,7 +265,9 @@ function splitOutsideParenthesis (str, splitters = ',', check = false) {
   }
   result.push(cur)
 
+  if (parenth || quoteMode) throw new Error('Bad Expression: Open Parenthesis / Quote')
   if (check) return false
+
   return result
 }
 /**
