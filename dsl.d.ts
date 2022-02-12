@@ -13,6 +13,7 @@ export default _default;
  */
 export function dsl(str: string, { mode, substitutions, engine, additionalOperators }?: {
     engine?: import('json-logic-engine').LogicEngine;
+    asyncEngine?: import('json-logic-engine').AsyncLogicEngine;
     substitutions?: any;
     additionalOperators?: any;
     mode?: number;

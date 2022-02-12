@@ -55,49 +55,51 @@ const objectQuery = {
   }
 }
 
+const deterministic = { deterministic: true, sync: true }
+
 /**
  * The logic engine you wish to set up.
  * @param {import('json-logic-engine').LogicEngine} engine
  */
 function setupEngine (engine) {
-  engine.addMethod('aQuery', arrayQuery, { deterministic: true })
-  engine.addMethod('query', query, { deterministic: true })
+  engine.addMethod('aQuery', arrayQuery, deterministic)
+  engine.addMethod('query', query, deterministic)
   engine.addMethod('dynamicTimeBin', ([a, b, size]) => dynamicTimeBin(a, b, size))
   engine.addMethod('dynamicBin', ([a, b, c]) => dynamicBin(a, b, c))
-  engine.addMethod('toPairs', i => Object.entries(i), { deterministic: true })
-  engine.addMethod('toPairsObject', i => Object.entries(i).map(([key, value]) => ({ [key]: value })), { deterministic: true })
-  engine.addMethod('fromPairs', i => Object.fromEntries(i), { deterministic: true })
-  engine.addMethod('from', ([key, value]) => Object.fromEntries([[key, value]]), { deterministic: true })
-  engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), { deterministic: true })
-  engine.addModule('Math', Math, { deterministic: true })
-  engine.addMethod('split', ([i, splitter]) => ('' + i).split(splitter || ''), { deterministic: true })
-  engine.addMethod('xprod', data => xprod(...[].concat(data)), { deterministic: true })
-  engine.addMethod('omit', ([obj, keys]) => omit(keys, obj), { deterministic: true })
-  engine.addMethod('pick', ([obj, keys]) => pick(keys, obj), { deterministic: true })
-  engine.addMethod('type', i => type(i), { deterministic: true })
-  engine.addMethod('isArray', i => isArray(i), { deterministic: true })
-  engine.addMethod('isBoolean', i => isBoolean(i), { deterministic: true })
-  engine.addMethod('isDate', i => isDate(i), { deterministic: true })
-  engine.addMethod('isFalsy', i => isFalsy(i), { deterministic: true })
-  engine.addMethod('isTruthy', i => isTruthy(i), { deterministic: true })
-  engine.addMethod('isFinite', i => isFinite(i), { deterministic: true })
-  engine.addMethod('isFalse', i => isFalse(i), { deterministic: true })
-  engine.addMethod('isInteger', i => isInteger(i), { deterministic: true })
-  engine.addMethod('isIterable', i => isIterable(i), { deterministic: true })
-  engine.addMethod('isNull', i => isNull(i), { deterministic: true })
-  engine.addMethod('isNumber', i => isNumber(i), { deterministic: true })
-  engine.addMethod('isObject', i => isObject(i), { deterministic: true })
-  engine.addMethod('isUndefined', i => isUndefined(i), { deterministic: true })
-  engine.addMethod('isString', i => isString(i), { deterministic: true })
-  engine.addMethod('isValidDate', i => isValidDate(i), { deterministic: true })
+  engine.addMethod('toPairs', i => Object.entries(i), deterministic)
+  engine.addMethod('toPairsObject', i => Object.entries(i).map(([key, value]) => ({ [key]: value })), deterministic)
+  engine.addMethod('fromPairs', i => Object.fromEntries(i), deterministic)
+  engine.addMethod('from', ([key, value]) => Object.fromEntries([[key, value]]), deterministic)
+  engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), deterministic)
+  engine.addModule('Math', Math, deterministic)
+  engine.addMethod('split', ([i, splitter]) => ('' + i).split(splitter || ''), deterministic)
+  engine.addMethod('xprod', data => xprod(...[].concat(data)), deterministic)
+  engine.addMethod('omit', ([obj, keys]) => omit(keys, obj), deterministic)
+  engine.addMethod('pick', ([obj, keys]) => pick(keys, obj), deterministic)
+  engine.addMethod('type', i => type(i), deterministic)
+  engine.addMethod('isArray', i => isArray(i), deterministic)
+  engine.addMethod('isBoolean', i => isBoolean(i), deterministic)
+  engine.addMethod('isDate', i => isDate(i), deterministic)
+  engine.addMethod('isFalsy', i => isFalsy(i), deterministic)
+  engine.addMethod('isTruthy', i => isTruthy(i), deterministic)
+  engine.addMethod('isFinite', i => isFinite(i), deterministic)
+  engine.addMethod('isFalse', i => isFalse(i), deterministic)
+  engine.addMethod('isInteger', i => isInteger(i), deterministic)
+  engine.addMethod('isIterable', i => isIterable(i), deterministic)
+  engine.addMethod('isNull', i => isNull(i), deterministic)
+  engine.addMethod('isNumber', i => isNumber(i), deterministic)
+  engine.addMethod('isObject', i => isObject(i), deterministic)
+  engine.addMethod('isUndefined', i => isUndefined(i), deterministic)
+  engine.addMethod('isString', i => isString(i), deterministic)
+  engine.addMethod('isValidDate', i => isValidDate(i), deterministic)
   engine.addMethod('join', data => {
     if (Array.isArray(data[0])) {
       const [arr, splitter] = data
       return arr.join(splitter || '')
     }
     return data.join('')
-  }, { deterministic: true })
-  engine.addMethod('objectQuery', objectQuery, { deterministic: true })
+  }, deterministic)
+  engine.addMethod('objectQuery', objectQuery, deterministic)
   engine.addMethod('aggregate', ([accumulator, current]) => {
     if (!accumulator) { accumulator = { count: 0, sum: 0, sum2: 0, min: Infinity, max: -Infinity } }
 
@@ -110,11 +112,11 @@ function setupEngine (engine) {
     return accumulator
   })
   engine.addMethod('date', i => (i ? new Date(i) : new Date()))
-  engine.addMethod('stringify', i => JSON.stringify(i), { deterministic: true })
-  engine.addMethod('startsWith', ([a, b]) => ('' + a).startsWith(b), { deterministic: true })
-  engine.addMethod('first', i => i[0], { deterministic: true })
-  engine.addMethod('last', i => i[i.length - 1], { deterministic: true })
-  engine.addMethod('kjoin', (data) => kjoin(...data), { deterministic: true })
+  engine.addMethod('stringify', i => JSON.stringify(i), deterministic)
+  engine.addMethod('startsWith', ([a, b]) => ('' + a).startsWith(b), deterministic)
+  engine.addMethod('first', i => i[0], deterministic)
+  engine.addMethod('last', i => i[i.length - 1], deterministic)
+  engine.addMethod('kjoin', (data) => kjoin(...data), deterministic)
 
   engine.addMethod('match', {
     method: data => {
@@ -152,19 +154,23 @@ function setupEngine (engine) {
     },
     traverse: true,
     deterministic: true
-  })
+  }, { sync: true })
 
   engine.addMethod('list', {
     method: i => i ? [].concat(i) : [],
     deterministic: true,
-    traverse: true
+    traverse: true,
+    sync: true
   })
+
   engine.addMethod('overwrite', {
     method: ([obj, name, value], context, above, engine) => {
       return ({ ...obj, [name]: value })
     },
-    traverse: true
+    traverse: true,
+    sync: true
   })
+
   engine.addMethod('each', {
     method: ([obj, transform], context, above, engine) => {
       obj = engine.run(obj, context, { above })
@@ -222,29 +228,32 @@ function setupEngine (engine) {
       stddev: Math.sqrt(variance)
     }
   }
-  engine.addMethod('processBin', processBin, { deterministic: true })
+  engine.addMethod('processBin', processBin, deterministic)
   engine.addMethod('processBins', bins => {
     const result = {}
     for (const key in bins) {
       result[key] = processBin(bins[key])
     }
     return result
-  }, { deterministic: true })
+  }, deterministic)
+
   engine.addMethod('xy', {
     method: ([x, y]) => ({ x, y }),
     traverse: true,
+    sync: true,
     compile: (data, buildState) => {
       const x = buildString(data[0], buildState)
       const y = buildString(data[1], buildState)
       return `({ x: ${x}, y: ${y} })`
     }
   })
+
   engine.addMethod('obj', {
     method: (items) => {
       return items ? splitEvery(2, items).reduce((accumulator, [variable, value]) => ({ ...accumulator, [variable]: value }), {}) : {}
     },
     traverse: true,
-    deterministic: true,
+    // deterministic: true,
     compile: (data, buildState) => {
       if (!data) return '({})'
       data = [].concat(data)
@@ -288,7 +297,7 @@ function setupEngine (engine) {
     }
     return accumulator
   }, {})
-  engine.addModule('time', spreadTime, { deterministic: true })
+  engine.addModule('time', spreadTime, deterministic)
   engine.addMethod('time.snapTo', ([date, period, end = false]) => {
     if (typeof date === 'string') { date = new Date(date) }
     if (period === 's' || period === 'sec' || period === 'seconds' || period === 'second') {
@@ -312,10 +321,10 @@ function setupEngine (engine) {
       return time.formatISO(time.startOfYear(date))
     }
     throw new Error('Unrecognized time frame.')
-  }, { deterministic: true })
+  }, deterministic)
 
-  engine.addMethod('time.roundDate', ([time, period, units, end]) => roundTime(time, period, units, end), { deterministic: true })
-  engine.addMethod('time.round', ([time, period, units, end]) => roundTime(time, period, units, end).toISOString(), { deterministic: true })
+  engine.addMethod('time.roundDate', ([time, period, units, end]) => roundTime(time, period, units, end), deterministic)
+  engine.addMethod('time.round', ([time, period, units, end]) => roundTime(time, period, units, end).toISOString(), deterministic)
   engine.methods.get = {
     ...engine.methods.get,
     compile: function (data, buildState) {

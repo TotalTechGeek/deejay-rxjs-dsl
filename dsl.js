@@ -7,7 +7,7 @@ import { bufferReduce } from './operators/bufferReduce.js'
 import { throttleReduce } from './operators/throttleReduce.js'
 import { average } from './operators/virtual/average.js'
 import { sum } from './operators/virtual/sum.js'
-import { LogicEngine } from 'json-logic-engine'
+import { AsyncLogicEngine, LogicEngine } from 'json-logic-engine'
 import { toObject } from './operators/virtual/toObject.js'
 
 const operators = { ...rxOps, throttleReduce, bufferReduce }
@@ -408,7 +408,12 @@ const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTi
  * @param {number} n
  * @returns {Function}
  */
-function buildOperator (name, logic, { n = 1, eval: evaluate = false, extra = [], engine, ops = operators } = {}) {
+function buildOperator (name, logic, { asyncEngine, n = 1, eval: evaluate = false, extra = [], engine, ops = operators } = {}) {
+  if (name === 'async') {
+    const f = asyncEngine.build(logic)
+    return operators.mergeMap(async (...args) => (await f)(args), ...extra)
+  }
+
   const operator = ops[name]
   if (n === 1) {
     if (accumulators.has(name)) {
@@ -434,19 +439,21 @@ function buildOperator (name, logic, { n = 1, eval: evaluate = false, extra = []
 }
 
 const defaultEngine = setupEngine(new LogicEngine())
+const defaultAsyncEngine = setupEngine(new AsyncLogicEngine())
 
 /**
  * Takes in the instructions from the dsl and generates functions to be used
  * in an RxJS pipeline.
  *
  * @param {string} str
- * @param {{ engine?: import('json-logic-engine').LogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
+ * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
  * @returns {((...args) => any)[] | (...args) => any}
  */
 function dsl (str, {
   mode = 0,
   substitutions = {},
   engine = defaultEngine,
+  asyncEngine = defaultAsyncEngine,
   additionalOperators = {}
 } = {}) {
   if (splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }], true)) {
@@ -489,6 +496,7 @@ function dsl (str, {
                   '@group': group.key
                 },
                 engine,
+                asyncEngine,
                 additionalOperators
               })
             )
@@ -496,7 +504,7 @@ function dsl (str, {
           result.push(rxOps[combineOperation]())
         }
       } else {
-        result.push(...dsl(line, { mode: 0, substitutions, engine, additionalOperators }))
+        result.push(...dsl(line, { mode: 0, substitutions, engine, asyncEngine, additionalOperators }))
       }
 
       line = lines.shift()
@@ -508,11 +516,11 @@ function dsl (str, {
   str = str.trim()
 
   if (str.startsWith('!')) {
-    return dsl(str.substring(1), { mode: 1, substitutions, engine, additionalOperators })
+    return dsl(str.substring(1), { mode: 1, substitutions, engine, asyncEngine, additionalOperators })
   }
 
   if (str.startsWith('#')) {
-    return dsl(str.substring(1), { mode: 2, substitutions, engine, additionalOperators })
+    return dsl(str.substring(1), { mode: 2, substitutions, engine, asyncEngine, additionalOperators })
   }
 
   const [head, ...tail] = str.split(' ')
@@ -547,6 +555,7 @@ function dsl (str, {
       n: mode === 1 ? 2 : 1,
       eval: mode === 2,
       engine,
+      asyncEngine,
       ops: { ...additionalOperators, ...operators },
       extra: extra.map(i => {
         return engine.run(substitutionLogic(i))

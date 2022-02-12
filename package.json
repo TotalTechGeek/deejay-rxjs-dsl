@@ -1,6 +1,6 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -12,7 +12,7 @@
   "dependencies": {
     "date-fns": "^2.23.0",
     "expiry-map": "^1.1.0",
-    "json-logic-engine": "^1.1.13",
+    "json-logic-engine": "^1.1.14",
     "json-power-query": "^1.1.15",
     "lodash.throttle": "^4.1.1",
     "ramda": "^0.27.1",
