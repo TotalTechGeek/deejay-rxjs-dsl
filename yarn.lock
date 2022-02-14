@@ -915,15 +915,15 @@ js-yaml@^3.13.1:
     argparse "^1.0.7"
     esprima "^4.0.0"
 
+json-logic-engine@1.1.15:
+  version "1.1.15"
+  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.15.tgz#2af649b3111be20cac8a9b6acf43ad0dd6536a1d"
+  integrity sha512-2GiQROCpHH80lC96v7S0dv7VvzMOZca2DD1r88XpQIKwx6HiB5CmLCNALvUxdunnAVLNxNR3jIGQ8DVVjx8YnQ==
+
 json-logic-engine@^1.1.11:
   version "1.1.11"
   resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.11.tgz#4492d76cd501105272fdb5de02b396ca3aa0eba9"
   integrity sha512-1dXIQYLjiyn0STvz1tFOkbjcW4CjPvDQ2ToLne4Vy6gujHGu0RsaMpm7uFvuP00Dja9IU2kZh1w2GwWbg9bg6g==
-
-json-logic-engine@^1.1.14:
-  version "1.1.14"
-  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.14.tgz#bfdeb3ad565d3aa5c03a881f8edcd821169d01b7"
-  integrity sha512-msL7VATN8Efb/8wvomf4tM3qfJXMHpJ0/RoLTsFtGKLFnl2fTUrwTueLjCHD0lXRIQQvWNg7shoRYDbDl1Pr+g==
 
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
