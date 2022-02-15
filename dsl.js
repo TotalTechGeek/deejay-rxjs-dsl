@@ -10,6 +10,8 @@ import { sum } from './operators/virtual/sum.js'
 import { AsyncLogicEngine, LogicEngine } from 'json-logic-engine'
 import { toObject } from './operators/virtual/toObject.js'
 
+import strip from 'strip-comments'
+
 const operators = { ...rxOps, throttleReduce, bufferReduce }
 const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
@@ -456,6 +458,7 @@ function dsl (str, {
   asyncEngine = defaultAsyncEngine,
   additionalOperators = {}
 } = {}) {
+  str = strip(str)
   if (splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }], true)) {
     const result = []
     const lines = splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }]).map(i => i.trim()).filter(i => i)
