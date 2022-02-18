@@ -53,6 +53,16 @@ logicalOps.or = 'or'
 logicalOps.and = 'and'
 logicalOps.In = 'in'
 
+function countChars (str, chars) {
+  const count = {}
+  for (let i = 0; i < str.length; i++) {
+    if (chars.indexOf(str[i]) !== -1) {
+      count[str[i]] = count[str[i]] ? count[str[i]] + 1 : 1
+    }
+  }
+  return count
+}
+
 // get the text within parenthesis.
 function getWithinParenthesis (str) {
   const result = []
@@ -217,7 +227,7 @@ function replace (str) {
   }
   return str
 }
-function splitOutsideParenthesis (str, splitters = ',', check = false) {
+function splitOutsideParenthesis (str, splitters = ',', check = false, open = ['('], close = [')']) {
   if (!Array.isArray(splitters)) splitters = [splitters]
   if (!splitters.length) throw new Error('No delimiters specified')
 
@@ -238,8 +248,8 @@ function splitOutsideParenthesis (str, splitters = ',', check = false) {
     if (!quoteMode) {
       if (str[i] === '"') { quoteMode = '"' }
       if (str[i] === "'") { quoteMode = "'" }
-      if (str[i] === '(') { parenth++ }
-      if (str[i] === ')') { parenth-- }
+      if (open.includes(str[i])) { parenth++ }
+      if (close.includes(str[i])) { parenth-- }
     } else {
       if (str[i] === '"' && quoteMode === '"') { quoteMode = false }
       if (str[i] === "'" && quoteMode === "'") { quoteMode = false }
@@ -461,11 +471,18 @@ function dsl (str, {
   str = strip(str)
   if (splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }], true)) {
     const result = []
-    const lines = splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }]).map(i => i.trim()).filter(i => i)
+    const lines = splitOutsideParenthesis(str, ['\n', ';', { text: '>>', keep: true }, { text: '<<', keep: true, next: true }]).map(i => i.trim().replace(/\n/g, ' ')).filter(i => i)
 
     let line = lines.shift()
 
     while (line) {
+      // let's do an imbalance check...
+      let counts = countChars(line, '[]{}')
+      while (lines.length && (counts['['] !== counts[']'] || counts['{'] !== counts['}'])) {
+        line += lines.shift()
+        counts = countChars(line, '[]{}')
+      }
+
       if (line.endsWith('>>')) {
         let blockCount = 0
         // grab the lines
@@ -528,7 +545,7 @@ function dsl (str, {
 
   const [head, ...tail] = str.split(' ')
   const rest = tail.join(' ')
-  const [expression, ...extra] = splitOutsideParenthesis(rest).map(i => i.trim())
+  const [expression, ...extra] = splitOutsideParenthesis(rest, ',', false, ['(', '{', '['], [')', '}', ']']).map(i => i.trim())
 
   const substitutionLogic = expression => mutateTraverse(generateLogic(expression), i => {
     if (i && typeof i === 'object') {
