@@ -1,11 +1,11 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "3.0.12",
+  "version": "3.0.13",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "prepublish": "npm run build",
-    "build": "run-script-os",
+    "build": "npm run generate:parser && run-script-os",
     "build:win32": "rm -rf dist && rollup index.js --config cjs.config.js && rollup index.js --config esm.config.js && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node",
     "build:default": "rm -rf dist && rollup index.js --config cjs.config.js && rollup index.js --config esm.config.js && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node",
     "generate:parser": "peggy --allowed-start-rules Document,Expression --cache --format es -o parser/dsl.js parser/grammar.pegjs && cd parser && exitzero standard --fix *.js"
