@@ -8,7 +8,7 @@
     "build": "run-script-os",
     "build:win32": "rm -rf dist && rollup index.js --config cjs.config.js && rollup index.js --config esm.config.js && echo { \"type\": \"module\" } > dist/esm/package.json && echo { \"type\": \"commonjs\" } > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node",
     "build:default": "rm -rf dist && rollup index.js --config cjs.config.js && rollup index.js --config esm.config.js && echo '{ \"type\": \"module\" }' > dist/esm/package.json && echo '{ \"type\": \"commonjs\" }' > dist/cjs/package.json && cd dist && exitzero standard --fix */*.js && tsc ../index.js --declaration --allowJs --emitDeclarationOnly --target ESNext --moduleResolution node",
-    "generate:parser": "peggy -o parser/generated_parser.js parser/grammar.pegjs"
+    "generate:parser": "peggy --cache --format es -o parser/generated_parser.js parser/grammar.pegjs && cd parser && exitzero standard --fix *.js"
   },
   "dependencies": {
     "date-fns": "^2.23.0",

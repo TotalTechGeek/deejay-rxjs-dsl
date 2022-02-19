@@ -117,7 +117,7 @@ function setupEngine (engine) {
   engine.addMethod('first', i => i[0], deterministic)
   engine.addMethod('last', i => i[i.length - 1], deterministic)
   engine.addMethod('kjoin', (data) => kjoin(...data), deterministic)
-
+  engine.addMethod('log', i => console.log(i))
   engine.addMethod('match', {
     method: data => {
       // 0 is the variable,

@@ -15,19 +15,16 @@
 }
 
 
-//
 // Documents
-//
-
 Document
   = Operations
 
-//
 // Operations
-//
 
 Operations
-  = _ head:Fork _                                            { return [head];          }
+  = _ head:Fork _ OperationDelimiter _ tail:Operations       { return [head, ...tail]; }
+  / _ head:Fork _                                            { return [head];          }
+  / _ head:Split _ OperationDelimiter _ tail:Operations      { return [head, ...tail]; }
   / _ head:Split _                                           { return head;            }
   / _ head:Operation _ OperationDelimiter _ tail:Operations  { return [head, ...tail]; }
   / _ head:Operation _ OperationDelimiter                    { return [head];          }
@@ -44,45 +41,44 @@ OperationDelimiter
   = ';'
   / '\n'?
 
-
-
 Split
   = _ '>>' doc:Document '<<' {
       return [
-        { split: doc },
-        { operator: 'mergeAll' }
+        { split: doc }
+        // ,{ operator: 'mergeAll' }
       ]
     }
-
-
 
 Fork
   = _ 'fork' _req type:Identifier _ '>>' _ body:ForkBody _ '<<' {
       return { fork: body, type: type }
+  } 
+  / _ 'fork' _req _ '>>' _ body:ForkBody _ '<<' {
+      return { fork: body, type: "merge" }
   }
+
 ForkBody
-  = _ '(' _ head:Document _ ')' tail:ForkBody* { return [head, ...(tail || [])] }
+  = _ '(' _ head:Document _ ')' tail:ForkBody* { return [head, ...(tail.flat() || [])] }
 
-
-
-//
 // Expressions
-//
-
 Expression "expression"
   = ArithmeticExpression
   / FunctionCall
   / NonArithmeticExpression
+  
 NonArithmeticExpression
   = Object
   / Array
   / Boolean
+  / Group
+  / Numeric
   / VarIdentifier
   / ContextIdentifier
   / String
-  / Numeric
-
-
+  / FunctionCall
+  / Infinity
+  / Null
+  / Undefined
 
 ArithmeticExpression = ArithmeticExpression9
 ArithmeticExpression9
@@ -125,21 +121,17 @@ ArithmeticExpression0
   = _ "(" _ exp:Expression _ ")" { return exp; }
   / NonArithmeticExpression
 
-
-
 FunctionCall
   = _ id:Identifier _ '(' _ args:FunctionArgs _ ')' {
-    return { [id]: args }
+    return { [id]: args.length <= 1 ? args[0] : args }
   }
 FunctionArgs
   = head:Expression _ "," _ tail:(FunctionArgs) { return [head, ...tail]; }
   / head:Expression _ ","?                      { return [head]; }
+  / _                                           { return []; }
 
 
-//
 // Literals
-//
-
 Object "object"
   = _ "{" _ body:(ObjectEntry*) _ "}" {
     return { obj: body.flat() }
@@ -150,10 +142,8 @@ ObjectEntry "object-entry"
 ObjectEntryPair
   = _ key:ObjectKey _ ":" _ val:Expression { return [key, val]; }
 ObjectKey
-  = Identifier
-  / Expression
-
-
+  = Expression
+  / Identifier
 
 Array "array"
   = _ "[" _ body:(ArrayEntry*) _ "]" { return { list: body } }
@@ -162,9 +152,8 @@ ArrayEntry
   / value:Expression _ ","?					   { return [value]          }
 
 
-
 Identifier "identifier"
-  = [a-zA-Z_]+ [a-zA-Z_-]* { return text() }
+  = [a-zA-Z_.]+ [a-zA-Z0-9_-]* { return text() }
   / '@' id:Identifier { return text() }
   / '$' id:Identifier { return text() }
 VarIdentifier "@-identifier"
@@ -178,7 +167,6 @@ MemberIdentifier "member-identifier"
   / Integer { return text() }
 
 
-
 String "string"
   = '"' value:(DoubleQuotedStringContents*) '"' { return value.join(''); }
   / "'" value:(SingleQuotedStringContents*) "'" { return value.join(''); }
@@ -189,13 +177,14 @@ SingleQuotedStringContents
   = "\\'" { return text().stripEscape("'") }
   / [^']
 
-
-
 Boolean
   = 'true' { return true; }
   / 'false' { return false; }
-
-
+  
+Infinity = 'Infinity' { return Infinity }
+Null = 'null' { return null }
+Undefined = 'undefined' { return undefined }
+Group = "@group" { return { "@group": [] } }
 
 Numeric
   = _ [0-9]* "." [0-9]+ { return Number(text()) }
@@ -204,11 +193,7 @@ Numeric
 Integer 'integer'
   = _ [0-9]+ { return Number(text()) }
 
-
-//
 // Whitespace
-//
-
 _req "required whitespace"
   = [ \t\n\r]+
 
