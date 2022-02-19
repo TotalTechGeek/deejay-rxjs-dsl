@@ -9,7 +9,7 @@ import { sum } from './operators/virtual/sum.js'
 import { AsyncLogicEngine, LogicEngine } from 'json-logic-engine'
 import { toObject } from './operators/virtual/toObject.js'
 
-import { parse } from './parser/generated_parser.js'
+import { parse } from './parser/dsl.js'
 
 import strip from 'strip-comments'
 import { clone } from 'ramda'
@@ -85,6 +85,7 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
   return logicOperators.map(([head, ...expressions]) => {
     const logic = expressions.shift()
     const mode = head.startsWith('!') ? 1 : head.startsWith('#') ? 2 : 0
+    if (head.startsWith('#') || head.startsWith('!')) head = head.substring(1)
     return buildOperator(head, logic, {
       n: mode === 1 ? 2 : 1,
       eval: mode === 2,
@@ -99,12 +100,11 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
 /**
  * Takes in the instructions from the dsl and generates functions to be used
  * in an RxJS pipeline.
- *
  * @param {*} program
  * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any }} options
  * @returns {((...args) => any)[]}
  */
-function buildLogic (program, { substitutions, engine, asyncEngine, additionalOperators }) {
+function buildDSL (program, { substitutions, engine, asyncEngine, additionalOperators }) {
   return program.flat().flatMap(item => {
     if (item.operator) {
       // expressions
@@ -114,7 +114,7 @@ function buildLogic (program, { substitutions, engine, asyncEngine, additionalOp
         // use the pipeline operator map pipe the output of each incoming observable into defined pipeline.
         rxOps.map(group => {
           return group.pipe(
-            ...buildLogic(item.split, {
+            ...buildDSL(item.split, {
               substitutions: {
                 ...substitutions,
                 '@group': group.key
@@ -133,7 +133,7 @@ function buildLogic (program, { substitutions, engine, asyncEngine, additionalOp
       if (item.type in joinOperators) operation = joinOperators[item.type]
       return rxOps.connect(i => operation(
         ...item.fork.map(logic => {
-          return i.pipe(...buildLogic(logic, { substitutions, additionalOperators, engine, asyncEngine }))
+          return i.pipe(...buildDSL(logic, { substitutions, additionalOperators, engine, asyncEngine }))
         })
       ))
     }
@@ -149,18 +149,21 @@ function buildLogic (program, { substitutions, engine, asyncEngine, additionalOp
  * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
  * @returns {((...args) => any)[]}
  */
-function dsl (str, {
+export function dsl (str, {
   substitutions = {},
   engine = defaultEngine,
   asyncEngine = defaultAsyncEngine,
   additionalOperators = {}
 } = {}) {
-  str = strip(str)
-  const program = parse(str)
-  return buildLogic(program, { substitutions, engine, asyncEngine, additionalOperators })
+  const program = parse(strip(str), { startRule: 'Document' })
+  return buildDSL(program, { substitutions, engine, asyncEngine, additionalOperators })
 }
 
-export { dsl }
+export function generateLogic (str) {
+  return parse(str, { startRule: 'Expression' })
+}
+
 export default {
-  dsl
+  dsl,
+  generateLogic
 }

@@ -32,8 +32,12 @@ Operations
 Operation
   = op:Operator _req exps:Operands OperationDelimiter { return { operator: op, expressions: exps } }
   / op:Operator OperationDelimiter                    { return { operator: op, expressions: []   } }
+
 Operator
-  = id:Identifier { return id }
+  = '#' id:Identifier { return `#${id}` }
+  / "!" id:Identifier { return `!${id}` }
+  /     id:Identifier { return id }
+
 Operands
   = _ exp:Expression _ "," _ tail:Operands { return [exp, ...tail] }
   / _ exp:Expression { return [ exp ]; }
@@ -153,7 +157,7 @@ ArrayEntry
 
 
 Identifier "identifier"
-  = [a-zA-Z_.]+ [a-zA-Z0-9_-]* { return text() }
+  = [a-zA-Z_.0-9]+ [a-zA-Z0-9_-]* { return text() }
   / '@' id:Identifier { return text() }
   / '$' id:Identifier { return text() }
 VarIdentifier "@-identifier"

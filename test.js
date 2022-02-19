@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { from, throttleTime, debounceTime, Observable, pipe, map } from 'rxjs'
-import { dsl } from './index.js'
+import { dsl, generateLogic } from './index.js'
 
 function * gen (count = Infinity) {
   let i = 0

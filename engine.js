@@ -248,6 +248,8 @@ function setupEngine (engine) {
     }
   })
 
+  engine.addMethod('**', ([a, b]) => (+a) ** (+b), deterministic)
+
   engine.addMethod('obj', {
     method: (items) => {
       return items ? splitEvery(2, items).reduce((accumulator, [variable, value]) => ({ ...accumulator, [variable]: value }), {}) : {}

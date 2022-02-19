@@ -1,10 +1,9 @@
 
-import { dsl } from './dsl.js'
+import { dsl, generateLogic } from './dsl.js'
 import { setupEngine } from './engine.js'
-export { dsl }
-
-export { setupEngine }
+export { dsl, setupEngine, generateLogic }
 export default {
   dsl,
-  setupEngine
+  setupEngine,
+  generateLogic
 }
