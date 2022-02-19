@@ -158,7 +158,7 @@ ObjectKey
   / Identifier
 
 Array "array"
-  = _ "[" _ body:(ArrayEntry*) _ "]" { return { list: body } }
+  = _ "[" _ body:(ArrayEntry*) _ "]" { return { list: body.flat() } }
 ArrayEntry
   = value:Expression _ "," _ tail:(ArrayEntry) { return [value, ...tail] }
   / value:Expression _ ","?					   { return [value]          }
