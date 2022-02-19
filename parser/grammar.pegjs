@@ -7,8 +7,14 @@
         return val;
       }
 
-      const operator = val[1];
-      const rightHandSide = val[3]
+      const substitutions = {
+        '||': 'or',
+        '&&': 'and'
+      }
+
+      const operator = substitutions[val[1]] || val[1];
+      const rightHandSide = val[3];
+
       return { [operator]: [acc, rightHandSide] }
     }, null)
   }
@@ -28,6 +34,8 @@ Operations
   / _ head:Split _                                           { return head;            }
   / _ head:Operation _ OperationDelimiter _ tail:Operations  { return [head, ...tail]; }
   / _ head:Operation _ OperationDelimiter                    { return [head];          }
+  / _ OperationDelimiter _                                   { return [];              }
+  / _                                                        { return [];              }
 
 Operation
   = op:Operator _req exps:Operands OperationDelimiter { return { operator: op, expressions: exps } }
