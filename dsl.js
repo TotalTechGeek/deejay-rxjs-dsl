@@ -92,7 +92,7 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
       engine,
       asyncEngine,
       ops: { ...additionalOperators, ...operators },
-      extra: expressions
+      extra: expressions.map(i => engine.run(i))
     })
   })
 }
