@@ -34,7 +34,10 @@ Operations
   / head:Operation OperationDelimiter                        { return [head];          }
   / head:Operation                                           { return [head];          }
   / OperationDelimiter                                       { return [];              }
+  / Comment OperationDelimiter tail:Operations               { return [...tail];       }
+  / Comment                                                  { return []               }
   / _                                                        { return [];              }
+  
 
 Operation
   = op:Operator _req exps:Operands                    { return { operator: op, expressions: exps } }
@@ -52,7 +55,7 @@ Operands
 OperationDelimiter
   = [ \t\r]* [;\n]+ [ \t\r]*
   / ' '
-
+  
 Split
   = _ '>>' doc:Document '<<' {
       return [
@@ -149,21 +152,25 @@ Object "object"
   = _ "{" _ body:(ObjectEntry*) _ "}" {
     return { obj: body.flat() }
   }
+
 ObjectEntry "object-entry"
   = pair:ObjectEntryPair _ "," _ tail:(ObjectEntry) { return [ ...pair, ...tail ] }
   / pair:ObjectEntryPair _ ","?                     { return pair                 }
+ 
 ObjectEntryPair
   = _ key:ObjectKey _ ":" _ val:Expression { return [key, val]; }
+  
 ObjectKey
   = Expression
   / Identifier
 
 Array "array"
   = _ "[" _ body:(ArrayEntry*) _ "]" { return { list: body.flat() } }
+  
 ArrayEntry
   = value:Expression _ "," _ tail:(ArrayEntry) { return [value, ...tail] }
   / value:Expression _ ","?					   { return [value]          }
-
+ 
 
 Identifier "identifier"
   = [a-zA-Z_0-9] [.a-zA-Z0-9_-]* { return text() }
@@ -185,9 +192,11 @@ OperatorIdentifier "operator-identifier"
 String "string"
   = '"' value:(DoubleQuotedStringContents*) '"' { return value.join(''); }
   / "'" value:(SingleQuotedStringContents*) "'" { return value.join(''); }
+  
 DoubleQuotedStringContents
   = '\\"' { return text().stripEscape('"'); }
   / [^"]
+
 SingleQuotedStringContents
   = "\\'" { return text().stripEscape("'") }
   / [^']
@@ -221,10 +230,14 @@ TimeUnit 'time-unit'
   / "d"  { return 24 * 60 * 60 * 1000 }
   / "w"  { return 7 * 24 * 60 * 60 * 1000 }
   / "y"  { return 365 * 24 * 60 * 60 * 1000 }
+  
+// Whitespace & Comments 
+Comment =   [ \t\n\r]* '//' ([^\n]*)       
+          / [ \t\n\r]* '/*' (!'*/' .)* '*/' 
 
-// Whitespace
 _req "required whitespace"
-  = [ \t\n\r]+
-
+  = Comment* [ \t\n\r]+
+  
 _ "optional whitespace"
-  = [ \t\n\r]*
+  = Comment* [ \t\n\r]* 
+  

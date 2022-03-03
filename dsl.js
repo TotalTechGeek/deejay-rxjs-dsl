@@ -10,10 +10,8 @@ import { sum } from './operators/virtual/sum.js'
 import { AsyncLogicEngine, LogicEngine } from 'json-logic-engine'
 import { toObject } from './operators/virtual/toObject.js'
 
-import { parse } from './parser/dsl.js'
-
-import strip from 'strip-comments'
 import { clone } from 'ramda'
+import { parse } from './parse.js'
 
 const operators = { ...rxOps, throttleReduce, bufferReduce, flush }
 const virtualOperators = { sum, average, toObject }
@@ -35,6 +33,8 @@ function buildOperator (name, logic, { asyncEngine, n = 1, eval: evaluate = fals
   }
 
   const operator = ops[name]
+  if (!operator) throw new Error(`Operator '${name}' has not been exposed to the DSL.`)
+
   if (n === 1) {
     if (accumulators.has(name)) {
       mutateTraverse(logic, i => {
@@ -161,7 +161,7 @@ export function dsl (str, {
   asyncEngine = defaultAsyncEngine,
   additionalOperators = {}
 } = {}) {
-  const program = parse(strip(str), { startRule: 'Document' })
+  const program = parse(str, { startRule: 'Document' })
   return buildDSL(program, { substitutions, engine, asyncEngine, additionalOperators })
 }
 
@@ -179,7 +179,7 @@ export function generateLogic (str) {
  * @returns {({ expressions: any[], operator: string } | { split: any[] } | { fork: any[] })[]}
  */
 export function generatePipeline (str) {
-  return parse(strip(str), { startRule: 'Document' })
+  return parse(str, { startRule: 'Document' })
 }
 
 export default {

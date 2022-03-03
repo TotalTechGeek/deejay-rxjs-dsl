@@ -915,22 +915,22 @@ js-yaml@^3.13.1:
     argparse "^1.0.7"
     esprima "^4.0.0"
 
-json-logic-engine@^1.1.16:
-  version "1.1.16"
-  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.16.tgz#0775e9b8d2f5fb2bd3d7ce47a1db057e3f53254a"
-  integrity sha512-dry8KUiaJSQs/qoxBLoGHXonNoU4z9gxnodqnjcZUAjKxG8LOigc1ClO8j1VCqDCbxnRBopwZel5WpgSce/JfQ==
+json-logic-engine@^1.1.17:
+  version "1.1.17"
+  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.17.tgz#59ffd1798d58559a17b2d6c7f39bc726863333fe"
+  integrity sha512-nf8K63yKeFpwjYj4ENtQZ64gIGZSB7fuEXSNX6UAoLDh4YJDJ0/37MEvu6Nf6zNw1NUgESGKwdrEQ3LQVq0B9Q==
 
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"
   integrity sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==
 
-json-power-query@^1.1.16:
-  version "1.1.16"
-  resolved "https://registry.yarnpkg.com/json-power-query/-/json-power-query-1.1.16.tgz#148ecdf59235b9b182dc6686ba386e59e254acb7"
-  integrity sha512-oplxHiAKfw6c36yTKPO4qz8TyHjbWOhuNC/NF8VXwVG52Sk7mebsOXqLdXQ/TaBmvbIdt3HzP1HB+Q1QULqgAw==
+json-power-query@^1.1.17:
+  version "1.1.17"
+  resolved "https://registry.yarnpkg.com/json-power-query/-/json-power-query-1.1.17.tgz#b3e9c54b249f7086883d76ae6dcb5e9f6a84e130"
+  integrity sha512-NywDQhy5F2jR+B8kGFhyQa+LDkKu4maswqYYC7Oe3RBm4DmTuOjRBnUBJ8ZhyByLSduILjH1ilq9K0gotTrtYw==
   dependencies:
-    json-logic-engine "^1.1.16"
+    json-logic-engine "^1.1.17"
 
 json-schema-traverse@^0.4.1:
   version "0.4.1"
@@ -1564,11 +1564,6 @@ strip-bom@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/strip-bom/-/strip-bom-3.0.0.tgz#2334c18e9c759f7bdd56fdef7e9ae3d588e68ed3"
   integrity sha1-IzTBjpx1n3vdVv3vfprj1YjmjtM=
-
-strip-comments@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/strip-comments/-/strip-comments-2.0.1.tgz#4ad11c3fbcac177a67a40ac224ca339ca1c1ba9b"
-  integrity sha512-ZprKx+bBLXv067WTCALv8SSz5l2+XhpYCsVtSqlMnkAXMWDq+/ekVbl1ghqP9rUHTzv6sm/DwCOiYutU/yp1fw==
 
 strip-json-comments@^3.1.0, strip-json-comments@^3.1.1:
   version "3.1.1"
