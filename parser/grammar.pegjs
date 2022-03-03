@@ -22,36 +22,36 @@
 
 
 // Documents
-Document
-  = Operations
+Document = Operations
 
 // Operations
-
 Operations
-  = _ head:Fork _ OperationDelimiter _ tail:Operations       { return [head, ...tail]; }
+  = _ head:Fork OperationDelimiter tail:Operations           { return [head, ...tail]; }
   / _ head:Fork _                                            { return [head];          }
-  / _ head:Split _ OperationDelimiter _ tail:Operations      { return [head, ...tail]; }
+  / _ head:Split OperationDelimiter tail:Operations          { return [head, ...tail]; }
   / _ head:Split _                                           { return head;            }
-  / _ head:Operation _ OperationDelimiter _ tail:Operations  { return [head, ...tail]; }
-  / _ head:Operation _ OperationDelimiter                    { return [head];          }
-  / _ OperationDelimiter _                                   { return [];              }
+  / _ head:Operation OperationDelimiter tail:Operations      { return [head, ...tail]; }
+  / head:Operation OperationDelimiter                        { return [head];          }
+  / head:Operation                                           { return [head];          }
+  / OperationDelimiter                                       { return [];              }
   / _                                                        { return [];              }
 
 Operation
-  = op:Operator _req exps:Operands OperationDelimiter { return { operator: op, expressions: exps } }
-  / op:Operator OperationDelimiter                    { return { operator: op, expressions: []   } }
+  = op:Operator _req exps:Operands                    { return { operator: op, expressions: exps } }
+  / op:Operator                                       { return { operator: op, expressions: []   } }
 
 Operator
-  = '#' id:Identifier { return `#${id}` }
-  / "!" id:Identifier { return `!${id}` }
-  /     id:Identifier { return id }
+  = '#' id:OperatorIdentifier { return `#${id}` }
+  / "!" id:OperatorIdentifier { return `!${id}` }
+  /     id:OperatorIdentifier { return id }
 
 Operands
   = _ exp:Expression _ "," _ tail:Operands { return [exp, ...tail] }
   / _ exp:Expression { return [ exp ]; }
+  
 OperationDelimiter
-  = ';'
-  / '\n'?
+  = [ \t\r]* [;\n]+ [ \t\r]*
+  / ' '
 
 Split
   = _ '>>' doc:Document '<<' {
@@ -83,6 +83,7 @@ NonArithmeticExpression
   / Array
   / Boolean
   / Group
+  / Time
   / Numeric
   / VarIdentifier
   / ContextIdentifier
@@ -165,7 +166,7 @@ ArrayEntry
 
 
 Identifier "identifier"
-  = [a-zA-Z_.0-9]+ [a-zA-Z0-9_-]* { return text() }
+  = [a-zA-Z_0-9] [.a-zA-Z0-9_-]* { return text() }
   / '@' id:Identifier { return text() }
   / '$' id:Identifier { return text() }
 VarIdentifier "@-identifier"
@@ -177,6 +178,8 @@ ContextIdentifier "$-identifier"
 MemberIdentifier "member-identifier"
   = Identifier
   / Integer { return text() }
+OperatorIdentifier "operator-identifier" 
+  = [a-zA-Z_] [.a-zA-Z0-9_-]* { return text() }
 
 
 String "string"
@@ -199,11 +202,25 @@ Undefined = 'undefined' { return undefined }
 Group = "@group" { return { "@group": [] } }
 
 Numeric
-  = _ [0-9]* "." [0-9]+ { return Number(text()) }
-  / _ [0-9]+ "." [0-9]* { return Number(text()) }
+  = _ [0-9]* "." [0-9]+ ([eE][-]?[0-9]+)? { return Number(text()) }
+  / _ [0-9]+ "." [0-9]* ([eE][-]?[0-9]+)? { return Number(text()) }
   / Integer
+  
+  
 Integer 'integer'
-  = _ [0-9]+ { return Number(text()) }
+  = _ [0-9]+ ([eE][-]?[0-9]+)? { return Number(text()) }
+ 
+Time 'time' 
+  = _  amount:Numeric unit:TimeUnit "" { return Number(amount) * unit }
+  
+TimeUnit 'time-unit' 
+  = "ms" { return 1 }
+  / "s"  { return 1000 }
+  / "m"  { return 60 * 1000 }
+  / "h"  { return 60 * 60 * 1000 }
+  / "d"  { return 24 * 60 * 60 * 1000 }
+  / "w"  { return 7 * 24 * 60 * 60 * 1000 }
+  / "y"  { return 365 * 24 * 60 * 60 * 1000 }
 
 // Whitespace
 _req "required whitespace"

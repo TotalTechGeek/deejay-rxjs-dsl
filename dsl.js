@@ -2,6 +2,7 @@ import * as rxOps from 'rxjs/operators'
 import { merge, zip, race, concat } from 'rxjs'
 import { setupEngine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
+import flush from './operators/flush.js'
 import { bufferReduce } from './operators/bufferReduce.js'
 import { throttleReduce } from './operators/throttleReduce.js'
 import { average } from './operators/virtual/average.js'
@@ -14,7 +15,7 @@ import { parse } from './parser/dsl.js'
 import strip from 'strip-comments'
 import { clone } from 'ramda'
 
-const operators = { ...rxOps, throttleReduce, bufferReduce }
+const operators = { ...rxOps, throttleReduce, bufferReduce, flush }
 const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
