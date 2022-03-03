@@ -1,6 +1,17 @@
 import { Observable, Subject } from 'rxjs'
 import { adapt } from '../utils.js'
 
+/**
+ * An operator similar to "windowTime" that makes it simpler to split a stream based on a designated
+ * time interval, without creating sub-streams if there is no data flowing in.
+ *
+ * While windowTime and non-strict mode both struggle with closing the new stream when the event-loop is flooded,
+ * this operator will not if "strict" is set to true. Setting strict to true will force a flush on the given time
+ * interval as data is flooding in.
+ *
+ * @param {number} time
+ * @param {boolean} [strict]
+ */
 const flush = (time, strict = false) => source => new Observable(subscriber => {
   let timeout = null
   let current = null

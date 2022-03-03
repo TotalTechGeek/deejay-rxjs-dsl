@@ -105,7 +105,12 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
  * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any }} options
  * @returns {((...args) => any)[]}
  */
-function buildDSL (program, { substitutions, engine, asyncEngine, additionalOperators }) {
+function buildDSL (program, {
+  substitutions = {},
+  engine = defaultEngine,
+  asyncEngine = defaultAsyncEngine,
+  additionalOperators = {}
+} = {}) {
   return program.flat().flatMap(item => {
     if (item.operator) {
       // expressions
@@ -160,11 +165,25 @@ export function dsl (str, {
   return buildDSL(program, { substitutions, engine, asyncEngine, additionalOperators })
 }
 
+/**
+ * Parses a string into a JSON-Logic program.
+ * @param {string} str
+ */
 export function generateLogic (str) {
   return parse(str, { startRule: 'Expression' })
 }
 
+/**
+ * Adds a method that allows you to parse the DSL Script into the JSON Document.
+ * @param {string} str
+ * @returns {({ expressions: any[], operator: string } | { split: any[] } | { fork: any[] })[]}
+ */
+export function generatePipeline (str) {
+  return parse(strip(str), { startRule: 'Document' })
+}
+
 export default {
   dsl,
-  generateLogic
+  generateLogic,
+  generatePipeline
 }
