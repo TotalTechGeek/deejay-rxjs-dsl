@@ -86,6 +86,7 @@ NonArithmeticExpression
   / Array
   / Boolean
   / Group
+  / Step
   / Time
   / Numeric
   / VarIdentifier
@@ -211,7 +212,8 @@ Boolean
 Infinity = 'Infinity' { return Infinity }
 Null = 'null' { return null }
 Undefined = 'undefined' { return undefined }
-Group = "@group" { return { "@group": [] } }
+Group = "@group" { return { "@group": undefined } }
+Step = "@step" { return { "@step": undefined } }
 
 Numeric
   = _ [0-9]* "." [0-9]+ ([eE][-]?[0-9]+)? { return Number(text()) }

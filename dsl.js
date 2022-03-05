@@ -112,21 +112,10 @@ function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate 
 const defaultEngine = setupEngine(new LogicEngine())
 const defaultAsyncEngine = setupEngine(new AsyncLogicEngine())
 
-function parseExpressions (operator, expressions, { substitutions, engine, asyncEngine, additionalOperators }) {
+function parseExpressions (operator, expressions, { substitutions, engine, asyncEngine, additionalOperators, step }) {
   expressions = ensureDefaults(operator, expressions, { ...additionalOperators, ...operators })
 
-  const substitutionLogic = expression => mutateTraverse(clone(expression), i => {
-    if (i && typeof i === 'object') {
-      for (const k in substitutions) {
-        if (k in i) {
-          return substitutions[k]
-        }
-      }
-    }
-    return i
-  })
-
-  expressions = expressions.map(substitutionLogic)
+  expressions = expressions.map(substitutionLogic({ ...substitutions, '@step': step }))
 
   let logicOperators = [
     [operator, ...expressions]
@@ -149,6 +138,19 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
   })
 }
 
+function substitutionLogic (substitutions) {
+  return expression => mutateTraverse(clone(expression), i => {
+    if (i && typeof i === 'object') {
+      for (const k in substitutions) {
+        if (k in i) {
+          return substitutions[k]
+        }
+      }
+    }
+    return i
+  })
+}
+
 /**
  * Evaluates the expressions of an operator & determines if it needs to add inject default expressions.
  * @param {string} operator
@@ -168,19 +170,20 @@ function ensureDefaults (operator, expressions, operators) {
  * Takes in the instructions from the dsl and generates functions to be used
  * in an RxJS pipeline.
  * @param {*} program
- * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any }} options
+ * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, meta?: { step: string } }} options
  * @returns {((...args) => any)[]}
  */
 function buildDSL (program, {
   substitutions = {},
   engine = defaultEngine,
   asyncEngine = defaultAsyncEngine,
-  additionalOperators = {}
+  additionalOperators = {},
+  meta = { step: '$' }
 } = {}) {
-  return program.flat().flatMap(item => {
+  return program.flat().flatMap((item, expressionIndex) => {
     if (item.operator) {
       // expressions
-      return parseExpressions(item.operator, item.expressions || [], { substitutions, engine, asyncEngine, additionalOperators })
+      return parseExpressions(item.operator, item.expressions || [], { substitutions, engine, asyncEngine, additionalOperators, step: `${meta.step}.${expressionIndex}`.substring(2) })
     } else if (item.split) {
       return [
         // use the pipeline operator map pipe the output of each incoming observable into defined pipeline.
@@ -193,7 +196,10 @@ function buildDSL (program, {
               },
               engine,
               asyncEngine,
-              additionalOperators
+              additionalOperators,
+              meta: {
+                step: `${meta.step}.${expressionIndex}~(${group.key})`
+              }
             })
           )
         }),
@@ -204,9 +210,17 @@ function buildDSL (program, {
       let operation = merge
       if (item.type in joinOperators) operation = joinOperators[item.type]
       return rxOps.connect(i => operation(
-        ...item.fork.map(logic => {
+        ...item.fork.map((logic, forkIndex) => {
           // @ts-ignore
-          return i.pipe(...buildDSL(logic, { substitutions, additionalOperators, engine, asyncEngine }))
+          return i.pipe(...buildDSL(logic, {
+            substitutions,
+            additionalOperators,
+            engine,
+            asyncEngine,
+            meta: {
+              step: `${meta.step}.${expressionIndex}~(${forkIndex})`
+            }
+          }))
         })
       ))
     }
