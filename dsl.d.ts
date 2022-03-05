@@ -3,18 +3,18 @@
  * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
  * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
  * "defaults" can fill in default values for the operator's parameters.
- * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any> | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any> } operator
+ * @param {(...args: any[]) => ((source: any) => import('rxjs').Observable<any>) | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any> } operator
  * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
  * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
  */
-export function declare(operator: (...args: any[]) => (source: any) => import('rxjs').Observable<any> | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any>, { immediateFrom, context, defaults, parseDefaults, defaultStart }?: {
+export function declare(operator: (...args: any[]) => import("rxjs").OperatorFunction<any, any> | import("rxjs").MonoTypeOperatorFunction<any> | ((source: any) => import('rxjs').Observable<any>), { immediateFrom, context, defaults, parseDefaults, defaultStart }?: {
     immediateFrom?: number;
     context?: boolean;
     defaults?: any[];
     parseDefaults?: boolean;
     defaultStart?: number;
 }, inject?: boolean): {
-    operator: (...args: any[]) => (source: any) => import('rxjs').Observable<any> | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any>;
+    operator: (...args: any[]) => import("rxjs").OperatorFunction<any, any> | import("rxjs").MonoTypeOperatorFunction<any> | ((source: any) => import('rxjs').Observable<any>);
     configuration: {
         immediateFrom: number;
         context: boolean;
