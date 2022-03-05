@@ -59,7 +59,7 @@ const deterministic = { deterministic: true, sync: true }
 
 /**
  * The logic engine you wish to set up.
- * @param {import('json-logic-engine').LogicEngine} engine
+ * @param {import('json-logic-engine').LogicEngine | import('json-logic-engine').AsyncLogicEngine} engine
  */
 function setupEngine (engine) {
   engine.addMethod('aQuery', arrayQuery, deterministic)

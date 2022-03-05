@@ -1,3 +1,4 @@
+// @ts-check
 import * as rxOps from 'rxjs/operators'
 import { merge, zip, race, concat } from 'rxjs'
 import { setupEngine } from './engine.js'
@@ -33,7 +34,7 @@ fixedOperators.forEach(operator => operatorDefinitions.set(operators[operator], 
  * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
  * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
  * "defaults" can fill in default values for the operator's parameters.
- * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any>} operator
+ * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any> | import('rxjs').OperatorFunction<any, any>} operator
  * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
  * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
  */
@@ -51,9 +52,9 @@ export function declare (operator, { immediateFrom = 1, context = false, default
 declare(flush, { immediateFrom: 0, context: false })
 
 /**
- * @param {keyof typeof operators} name
- * @param {*} logic
- * @param {number} n
+ * @param {keyof typeof operators | 'async'} name
+ * @param {any[]} expressions
+ * @param {{ eval?: boolean, engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, ops?: any, n?: number }} options
  * @returns {Function}
  */
 function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate = false, engine, ops = operators } = {}) {
@@ -192,6 +193,7 @@ function buildDSL (program, {
       if (item.type in joinOperators) operation = joinOperators[item.type]
       return rxOps.connect(i => operation(
         ...item.fork.map(logic => {
+          // @ts-ignore
           return i.pipe(...buildDSL(logic, { substitutions, additionalOperators, engine, asyncEngine }))
         })
       ))
