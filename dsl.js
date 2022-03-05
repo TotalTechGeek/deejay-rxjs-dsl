@@ -4,6 +4,8 @@ import { merge, zip, race, concat } from 'rxjs'
 import { setupEngine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
 import flush from './operators/flush.js'
+import wrap from './operators/wrap.js'
+
 import { bufferReduce } from './operators/bufferReduce.js'
 import { throttleReduce } from './operators/throttleReduce.js'
 import { average } from './operators/virtual/average.js'
@@ -14,12 +16,12 @@ import { toObject } from './operators/virtual/toObject.js'
 import { clone } from 'ramda'
 import { parse } from './parse.js'
 
-const operators = { ...rxOps, throttleReduce, bufferReduce, flush }
+const operators = { ...rxOps, throttleReduce, bufferReduce, flush, wrap }
 const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
-const accumulators = ['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce']
-const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray']
+const accumulators = ['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce', 'max', 'min']
+const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray', 'auditTime', 'sampleTime']
 
 const operatorDefinitions = new Map()
 
@@ -34,7 +36,7 @@ fixedOperators.forEach(operator => operatorDefinitions.set(operators[operator], 
  * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
  * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
  * "defaults" can fill in default values for the operator's parameters.
- * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any> | import('rxjs').OperatorFunction<any, any>} operator
+ * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any> | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any> } operator
  * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
  * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
  */
@@ -50,6 +52,16 @@ export function declare (operator, { immediateFrom = 1, context = false, default
 
 // Some declarations of baked in operators
 declare(flush, { immediateFrom: 0, context: false })
+declare(wrap, { defaults: ['@group'], parseDefaults: true, immediateFrom: 0 })
+declare(operators.count, { immediateFrom: 1, defaults: [true] })
+declare(operators.last, { immediateFrom: 1, defaults: [true] })
+declare(operators.first, { immediateFrom: 1, defaults: [true] })
+
+// @ts-ignore This is a virtual operator, but we'll allow it for now.
+declare(sum, { defaults: [{ var: '' }] })
+
+// @ts-ignore This is a virtual operator, but we'll allow it for now.
+declare(average, { defaults: [{ var: '' }] })
 
 /**
  * @param {keyof typeof operators | 'async'} name
@@ -144,7 +156,7 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
  * @param {any} operators
  */
 function ensureDefaults (operator, expressions, operators) {
-  const definition = operatorDefinitions.get(operators[operator]) || operators[operator]?.configuration || {}
+  const definition = operatorDefinitions.get(virtualOperators[operator]) || operatorDefinitions.get(operators[operator]) || operators[operator]?.configuration || {}
   if (definition.defaults && definition.defaults.length > (expressions.length - definition.defaultStart)) {
     if (expressions.length - definition.defaultStart) { throw new Error(`Not enough parameters for operator '${operator}'.`) }
     expressions = [...expressions, ...definition.defaults.slice(expressions.length - definition.defaultStart)]
