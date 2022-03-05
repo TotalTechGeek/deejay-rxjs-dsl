@@ -1,4 +1,28 @@
 /**
+ * Declares an operator's configuration to the DSL. Used to specify how the operator should be built.
+ * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
+ * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
+ * "defaults" can fill in default values for the operator's parameters.
+ * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any>} operator
+ * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
+ * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
+ */
+export function declare(operator: (...args: any[]) => (source: any) => import('rxjs').Observable<any>, { immediateFrom, context, defaults, parseDefaults, defaultStart }?: {
+    immediateFrom?: number;
+    context?: boolean;
+    defaults?: any[];
+    parseDefaults?: boolean;
+    defaultStart?: number;
+}, inject?: boolean): {
+    operator: (...args: any[]) => (source: any) => import('rxjs').Observable<any>;
+    configuration: {
+        immediateFrom: number;
+        context: boolean;
+        defaults: any[];
+        defaultStart: number;
+    };
+};
+/**
  * Takes in the instructions from the dsl and generates functions to be used
  * in an RxJS pipeline.
  *
@@ -35,5 +59,6 @@ declare namespace _default {
     export { dsl };
     export { generateLogic };
     export { generatePipeline };
+    export { declare };
 }
 export default _default;

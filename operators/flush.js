@@ -1,5 +1,4 @@
 import { Observable, Subject } from 'rxjs'
-import { adapt } from '../utils.js'
 
 /**
  * An operator similar to "windowTime" that makes it simpler to split a stream based on a designated
@@ -54,4 +53,4 @@ const flush = (time, strict = false) => source => new Observable(subscriber => {
   return complete
 })
 
-export default adapt(flush)
+export default flush

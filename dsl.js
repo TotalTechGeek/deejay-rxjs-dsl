@@ -17,8 +17,38 @@ const operators = { ...rxOps, throttleReduce, bufferReduce, flush }
 const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
-const accumulators = new Set(['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce'])
-const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime'])
+const accumulators = ['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce']
+const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray']
+
+const operatorDefinitions = new Map()
+
+const fixedDefinition = { immediateFrom: 0, context: false }
+const accumulatorDefinition = { immediateFrom: 1, context: true }
+
+accumulators.forEach(operator => operatorDefinitions.set(operators[operator], accumulatorDefinition))
+fixedOperators.forEach(operator => operatorDefinitions.set(operators[operator], fixedDefinition))
+
+/**
+ * Declares an operator's configuration to the DSL. Used to specify how the operator should be built.
+ * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
+ * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
+ * "defaults" can fill in default values for the operator's parameters.
+ * @param {(...args: any[]) => (source: any) => import('rxjs').Observable<any>} operator
+ * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
+ * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
+ */
+export function declare (operator, { immediateFrom = 1, context = false, defaults = [], parseDefaults = false, defaultStart = 0 } = {}, inject = true) {
+  if (parseDefaults) defaults = defaults.map(generateLogic)
+
+  if (inject) operatorDefinitions.set(operator, { immediateFrom, context, defaults, defaultStart })
+  return {
+    operator,
+    configuration: { immediateFrom, context, defaults, defaultStart }
+  }
+}
+
+// Some declarations of baked in operators
+declare(flush, { immediateFrom: 0, context: false })
 
 /**
  * @param {keyof typeof operators} name
@@ -26,42 +56,52 @@ const fixedOperators = new Set(['take', 'takeLast', 'skip', 'pluck', 'debounceTi
  * @param {number} n
  * @returns {Function}
  */
-function buildOperator (name, logic, { asyncEngine, n = 1, eval: evaluate = false, extra = [], engine, ops = operators } = {}) {
-  if (name === 'async') {
-    const f = asyncEngine.build(logic)
-    return operators.mergeMap(async (...args) => (await f)(args), ...extra)
+function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate = false, engine, ops = operators } = {}) {
+  const operator = ops[name]
+  const definition = operatorDefinitions.get(operator) || operator?.configuration || { immediateFrom: +!evaluate }
+  const operatorFunc = operator?.operator || operator
+
+  if (n === 1 && definition.context) {
+    mutateTraverse(expressions[0], i => {
+      if (typeof i.var !== 'undefined') throw new Error('Do not use the typical "@" operator in a reducer. Use $.current and $.accumulator.')
+      if (typeof i.context !== 'undefined') return { var: i.context }
+      return i
+    })
   }
 
-  const operator = ops[name]
+  for (let i = 0; i < expressions.length; i++) {
+    expressions[i] = i < definition.immediateFrom
+      ? engine.build(expressions[i])
+      : engine.run(expressions[i])
+  }
+  // console.log(name, expressions)
+
+  const logic = expressions.shift()
+
+  if (name === 'async') {
+    const f = asyncEngine.build(logic)
+    return operators.mergeMap(async (...args) => (await f)(args), ...expressions)
+  }
+
   if (!operator) throw new Error(`Operator '${name}' has not been exposed to the DSL.`)
 
   if (n === 1) {
-    if (accumulators.has(name)) {
-      mutateTraverse(logic, i => {
-        if (typeof i.var !== 'undefined') {
-          throw new Error('Do not use the typical "@" operator in a reducer. Use $.current and $.accumulator.')
-        }
-        if (typeof i.context !== 'undefined') {
-          return { var: i.context }
-        }
-        return i
-      })
-      const f = engine.build(logic)
-      return operator((...args) => f({ accumulator: args[0], current: args[1] }), ...extra)
+    if (definition.context) {
+      return operatorFunc((...args) => logic({ accumulator: args[0], current: args[1] }), ...expressions)
     }
-    let f = engine.build(logic)
-    if (evaluate || fixedOperators.has(name)) { f = f() }
-    return operator(f, ...extra)
+
+    return operatorFunc(logic, ...expressions)
   }
-  let f = engine.build(logic)
-  if (evaluate) { f = f() }
-  return operator((...args) => f(args), ...extra)
+
+  return operatorFunc((...args) => logic(args), ...expressions)
 }
 
 const defaultEngine = setupEngine(new LogicEngine())
 const defaultAsyncEngine = setupEngine(new AsyncLogicEngine())
 
 function parseExpressions (operator, expressions, { substitutions, engine, asyncEngine, additionalOperators }) {
+  expressions = ensureDefaults(operator, expressions, { ...additionalOperators, ...operators })
+
   const substitutionLogic = expression => mutateTraverse(clone(expression), i => {
     if (i && typeof i === 'object') {
       for (const k in substitutions) {
@@ -84,18 +124,31 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
   }
 
   return logicOperators.map(([head, ...expressions]) => {
-    const logic = expressions.shift()
     const mode = head.startsWith('!') ? 1 : head.startsWith('#') ? 2 : 0
     if (head.startsWith('#') || head.startsWith('!')) head = head.substring(1)
-    return buildOperator(head, logic, {
+    return buildOperator(head, expressions, {
       n: mode === 1 ? 2 : 1,
       eval: mode === 2,
       engine,
       asyncEngine,
-      ops: { ...additionalOperators, ...operators },
-      extra: expressions.map(i => engine.run(i))
+      ops: { ...additionalOperators, ...operators }
     })
   })
+}
+
+/**
+ * Evaluates the expressions of an operator & determines if it needs to add inject default expressions.
+ * @param {string} operator
+ * @param {any[]} expressions
+ * @param {any} operators
+ */
+function ensureDefaults (operator, expressions, operators) {
+  const definition = operatorDefinitions.get(operators[operator]) || operators[operator]?.configuration || {}
+  if (definition.defaults && definition.defaults.length > (expressions.length - definition.defaultStart)) {
+    if (expressions.length - definition.defaultStart) { throw new Error(`Not enough parameters for operator '${operator}'.`) }
+    expressions = [...expressions, ...definition.defaults.slice(expressions.length - definition.defaultStart)]
+  }
+  return expressions
 }
 
 /**
@@ -185,5 +238,6 @@ export function generatePipeline (str) {
 export default {
   dsl,
   generateLogic,
-  generatePipeline
+  generatePipeline,
+  declare
 }
