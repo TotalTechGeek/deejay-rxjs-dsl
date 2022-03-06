@@ -28,7 +28,7 @@ export function declare(operator: (...args: any[]) => import("rxjs").OperatorFun
  *
  * @param {string} str
  * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
- * @returns {((...args) => any)[]}
+ * @returns {[import('rxjs').UnaryFunction<any, any>]}
  */
 export function dsl(str: string, { substitutions, engine, asyncEngine, additionalOperators }?: {
     engine?: import('json-logic-engine').LogicEngine;
@@ -36,7 +36,7 @@ export function dsl(str: string, { substitutions, engine, asyncEngine, additiona
     substitutions?: any;
     additionalOperators?: any;
     mode?: number;
-}): ((...args: any[]) => any)[];
+}): [import('rxjs').UnaryFunction<any, any>];
 /**
  * Parses a string into a JSON-Logic program.
  * @param {string} str

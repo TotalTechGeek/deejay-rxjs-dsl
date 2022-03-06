@@ -1,6 +1,6 @@
 // @ts-check
 import * as rxOps from 'rxjs/operators'
-import { merge, zip, race, concat } from 'rxjs'
+import { merge, zip, race, concat, pipe } from 'rxjs'
 import { setupEngine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
 import flush from './operators/flush.js'
@@ -234,7 +234,7 @@ function buildDSL (program, {
  *
  * @param {string} str
  * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
- * @returns {((...args) => any)[]}
+ * @returns {[import('rxjs').UnaryFunction<any, any>]}
  */
 export function dsl (str, {
   substitutions = {},
@@ -243,7 +243,10 @@ export function dsl (str, {
   additionalOperators = {}
 } = {}) {
   const program = parse(str, { startRule: 'Document' })
-  return buildDSL(program, { substitutions, engine, asyncEngine, additionalOperators })
+  return [pipe(
+    // @ts-ignore
+    ...buildDSL(program, { substitutions, engine, asyncEngine, additionalOperators })
+  )]
 }
 
 /**
