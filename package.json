@@ -1,6 +1,6 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "3.0.24",
+  "version": "3.0.25",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
