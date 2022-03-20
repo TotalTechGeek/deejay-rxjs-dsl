@@ -154,15 +154,38 @@ FunctionArgs
 // Literals
 Object "object"
   = _ "{" _ body:(ObjectEntry*) _ "}" {
-    return { obj: body.flat() }
+    const arr = body.flat()
+    
+    let objs = []
+	  let current = { obj: [] }
+
+    for(const i of arr) {
+        if (i.merge) {        
+            if (current.obj.length) objs.push(current)
+            objs.push(i.merge)
+            current = { obj: [] }
+        }
+        else current.obj.push(i)
+    }
+
+    if (current.obj.length) objs.push(current)
+    if (objs.length === 1) return objs[0]
+   
+    return { combine: objs }
   }
 
 ObjectEntry "object-entry"
   = pair:ObjectEntryPair _ "," _ tail:(ObjectEntry) { return [ ...pair, ...tail ] }
-  / pair:ObjectEntryPair _ ","?                     { return pair                 }
+  / pair:ObjectEntryPair _ ","?                     { return pair }
+  / "...@." id:Identifier _ ","?                    { return [{ merge: { var: id  } }] }
+  / "...@" _ ","?                                   { return [{ merge: { var: ''  } }] }
+  / "...$." id:Identifier _ ","?                    { return [{ merge: { context: id  } }] }
+  / "...$" _ ","?                                   { return [{ merge: { context: ''  } }] }
  
 ObjectEntryPair
   = _ key:ObjectKey _ ":" _ val:Expression { return [key, val]; }
+  / "@." id:Identifier                     { return [id.split('.').pop(), { var: id }] }
+  / "$." id:Identifier                     { return [id.split('.').pop(), { context: id }] }
   
 ObjectKey
   = Expression
@@ -245,4 +268,3 @@ _req "required whitespace"
   
 _ "optional whitespace"
   = Comment* [ \t\n\r]* 
-  
