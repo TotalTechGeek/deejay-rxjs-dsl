@@ -1,6 +1,24 @@
 {
   String.prototype.stripEscape = function(seq) { return this.replace(`\\${seq}`, seq); }
+   
+  function recurseObject (obj) { 
+    if (Array.isArray(obj)) {
+        const res = obj.map(recurseObject).flat().filter(i=>i);
+        return res
+    }
+    if (obj && typeof obj === 'object') {
+        const key = Object.keys(obj)[0];
 
+
+        if (key === 'var') return [obj]
+        if (key === 'context') return [obj]
+
+        return [recurseObject(obj[key])].flat() 
+    }
+
+    return null
+ }
+  
   function reduceArithmetic(head, tail) {
     return [head, ...tail].reduce((acc, val) => {
       if (acc == null) {
@@ -155,6 +173,7 @@ FunctionArgs
 Object "object"
   = _ "{" _ body:(ObjectEntry*) _ "}" {
     const arr = body.flat()
+    if (!arr.some(i=>i.merge)) return { obj: arr }
     
     let objs = []
 	  let current = { obj: [] }
@@ -169,7 +188,6 @@ Object "object"
     }
 
     if (current.obj.length) objs.push(current)
-    if (objs.length === 1) return objs[0]
    
     return { combine: objs }
   }
@@ -177,15 +195,16 @@ Object "object"
 ObjectEntry "object-entry"
   = pair:ObjectEntryPair _ "," _ tail:(ObjectEntry) { return [ ...pair, ...tail ] }
   / pair:ObjectEntryPair _ ","?                     { return pair }
-  / "...@." id:Identifier _ ","?                    { return [{ merge: { var: id  } }] }
-  / "...@" _ ","?                                   { return [{ merge: { var: ''  } }] }
-  / "...$." id:Identifier _ ","?                    { return [{ merge: { context: id  } }] }
-  / "...$" _ ","?                                   { return [{ merge: { context: ''  } }] }
+  / _ "..." expr:Expression _ ","?                  { return [{ merge: expr }] }
  
 ObjectEntryPair
   = _ key:ObjectKey _ ":" _ val:Expression { return [key, val]; }
-  / "@." id:Identifier                     { return [id.split('.').pop(), { var: id }] }
-  / "$." id:Identifier                     { return [id.split('.').pop(), { context: id }] }
+  / _ val:Expression  { 
+      const result = recurseObject(val)
+      if (!result) error('Expression in object does not contain a single reference to a variable.')
+      if (result.length !== 1) error('Expression in object does not contain a single reference to a variable. (' + result.map(i=>i.var || i.context).join(' & ') + ' referenced)')
+      return [(result[0].var || result[0].context).split('.').pop(), val]
+  }
   
 ObjectKey
   = Expression

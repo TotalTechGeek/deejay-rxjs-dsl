@@ -1,8 +1,8 @@
 import { parse as parsePeg } from './parser/dsl.js'
 
 class ParseError extends Error {
-  constructor (start, end, expected, found, script) {
-    super('There was an error parsing your document')
+  constructor (start, end, expected, found, script, message) {
+    super((message || '').startsWith('Expected') ? 'There was an error parsing your document' : message)
     this.start = start
     this.end = end
     this.found = found
@@ -25,6 +25,6 @@ export function parse (script, { startRule }) {
   try {
     return parsePeg(script, { startRule })
   } catch (err) {
-    throw new ParseError(err.location.start, err.location.end, err.expected, err.found, script)
+    throw new ParseError(err.location.start, err.location.end, err.expected, err.found, script, err.message)
   }
 }

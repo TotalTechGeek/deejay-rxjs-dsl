@@ -70,7 +70,7 @@ function setupEngine (engine) {
   engine.addMethod('toPairsObject', i => Object.entries(i).map(([key, value]) => ({ [key]: value })), deterministic)
   engine.addMethod('fromPairs', i => Object.fromEntries(i), deterministic)
   engine.addMethod('from', ([key, value]) => Object.fromEntries([[key, value]]), deterministic)
-  engine.addMethod('combine', ([a, b]) => ({ ...a, ...b }), deterministic)
+  engine.addMethod('combine', (data) => Object.assign({}, ...data), deterministic)
   engine.addModule('Math', Math, deterministic)
   engine.addMethod('split', ([i, splitter]) => ('' + i).split(splitter || ''), deterministic)
   engine.addMethod('xprod', data => xprod(...[].concat(data)), deterministic)
