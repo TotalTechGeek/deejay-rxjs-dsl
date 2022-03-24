@@ -915,22 +915,22 @@ js-yaml@^3.13.1:
     argparse "^1.0.7"
     esprima "^4.0.0"
 
-json-logic-engine@^1.1.17:
-  version "1.1.17"
-  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.17.tgz#59ffd1798d58559a17b2d6c7f39bc726863333fe"
-  integrity sha512-nf8K63yKeFpwjYj4ENtQZ64gIGZSB7fuEXSNX6UAoLDh4YJDJ0/37MEvu6Nf6zNw1NUgESGKwdrEQ3LQVq0B9Q==
+json-logic-engine@^1.1.18:
+  version "1.1.18"
+  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.1.18.tgz#9ddfa0a290776989e7ef8da952688779c431331d"
+  integrity sha512-Tf9LtX+UZG03RMvZOOS+N3zeVS+uABUBjG+DMGiL7yV6gsTztkONmupojuLeSCtAGWfMrg8YE6mdMPDnL1ORTA==
 
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"
   integrity sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==
 
-json-power-query@^1.1.17:
-  version "1.1.17"
-  resolved "https://registry.yarnpkg.com/json-power-query/-/json-power-query-1.1.17.tgz#b3e9c54b249f7086883d76ae6dcb5e9f6a84e130"
-  integrity sha512-NywDQhy5F2jR+B8kGFhyQa+LDkKu4maswqYYC7Oe3RBm4DmTuOjRBnUBJ8ZhyByLSduILjH1ilq9K0gotTrtYw==
+json-power-query@^1.1.18:
+  version "1.1.18"
+  resolved "https://registry.yarnpkg.com/json-power-query/-/json-power-query-1.1.18.tgz#bde3bc7988f1ba81558337f92c3fd2f810d224cd"
+  integrity sha512-zNRJydU8GsWjLYP0cQSepEkJkQOZ8dVXLrCN74mtEzLQzDZtbnJvza4s/V8XQ46z9DtEMfnfobiaSO8M+IMcPw==
   dependencies:
-    json-logic-engine "^1.1.17"
+    json-logic-engine "^1.1.18"
 
 json-schema-traverse@^0.4.1:
   version "0.4.1"
