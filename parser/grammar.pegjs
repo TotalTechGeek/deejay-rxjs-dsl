@@ -1,6 +1,15 @@
 {
   String.prototype.stripEscape = function(seq) { return this.replace(`\\${seq}`, seq); }
    
+   
+  function joinStrings(acc, current) {
+    if (!acc[acc.length - 1]) return [current];
+    if (typeof current === 'object') return [...acc, current];
+    if (typeof acc[acc.length - 1] === 'string') acc[acc.length - 1] += current;
+    else acc.push(current);
+    return acc;
+  }
+   
   function recurseObject (obj) { 
     if (Array.isArray(obj)) {
         const res = obj.map(recurseObject).flat().filter(i=>i);
@@ -236,8 +245,17 @@ OperatorIdentifier "operator-identifier"
 
 
 String "string"
-  = '"' value:(DoubleQuotedStringContents*) '"' { return value.join(''); }
-  / "'" value:(SingleQuotedStringContents*) "'" { return value.join(''); }
+  = '"' value:(DoubleQuotedStringContents*) '"'   { return value.join(''); }
+  / "'" value:(SingleQuotedStringContents*) "'"   { return value.join(''); }
+  / "`" value:(TemplateQuotedStringContents*) "`" { return { cat: ['', ...value.reduce(joinStrings, [])] }; }
+  
+  
+TemplateQuotedStringContents
+  = '\\`' { return text().stripEscape('`'); }
+  / '\\$' { return '$' }
+  / '\\{' { return String.fromCharCode(123) } // Weird bug in the grammar parser prevents us from using the brace directly.
+  / "$"? "{" val:Expression "}" { return val }
+  / [^`]
   
 DoubleQuotedStringContents
   = '\\"' { return text().stripEscape('"'); }
