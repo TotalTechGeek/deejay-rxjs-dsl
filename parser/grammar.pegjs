@@ -252,10 +252,17 @@ String "string"
   
 TemplateQuotedStringContents
   = '\\`' { return text().stripEscape('`'); }
-  / '\\$' { return '$' }
   / '\\{' { return String.fromCharCode(123) } // Weird bug in the grammar parser prevents us from using the brace directly.
-  / "$"? "{" val:Expression "}" { return val }
+  / '\\$' { return '$' }
+  / '\\@' { return '@' }
+  / "@{" val:MemberIdentifier "}" { return { var: val } }
+  / "@{" val:Expression "}" { error('@{identifier} expressions must only contain member identifiers. This parses to an expression.') }
+  / "${" val:MemberIdentifier "}" { return { context: val } }
+  / "${" val:Expression "}" { error('${identifier} expressions must only contain member identifiers. This parses to an expression.') }
+  / "{" val:Expression "}" { return val }
+  / "{" val:([^}`]*) "}" { error('Invalid template in templated string.') }
   / [^`]
+  
   
 DoubleQuotedStringContents
   = '\\"' { return text().stripEscape('"'); }
