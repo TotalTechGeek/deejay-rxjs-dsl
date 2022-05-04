@@ -138,7 +138,7 @@ ArithmeticExpression7
     { return reduceArithmetic(head, tail); }
   / ArithmeticExpression6
 ArithmeticExpression6
-  = head:ArithmeticExpression5 tail:(_ ('<=' / '<' / '>' / '>=') _ val:ArithmeticExpression5)+
+  = head:ArithmeticExpression5 tail:(_ ('<=' / '<' / '>=' / '>') _ val:ArithmeticExpression5)+
     { return reduceArithmetic(head, tail); }
   / ArithmeticExpression5
 ArithmeticExpression5
