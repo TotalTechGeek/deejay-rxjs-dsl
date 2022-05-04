@@ -21,7 +21,7 @@ const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
 const accumulators = ['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce', 'max', 'min']
-const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray', 'auditTime', 'sampleTime']
+const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray', 'auditTime', 'sampleTime', 'startWith', 'endWith']
 
 const operatorDefinitions = new Map()
 
