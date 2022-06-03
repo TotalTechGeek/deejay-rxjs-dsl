@@ -3,16 +3,18 @@
  * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
  * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
  * "defaults" can fill in default values for the operator's parameters.
+ * "async" allows expressions to be built with the asyncEngine, but will be given to the operator as a Promise<Func>.
  * @param {(...args: any[]) => ((source: any) => import('rxjs').Observable<any>) | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any> } operator
- * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
+ * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number, async?: boolean }} [options]
  * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
  */
-export function declare(operator: (...args: any[]) => import("rxjs").OperatorFunction<any, any> | import("rxjs").MonoTypeOperatorFunction<any> | ((source: any) => import('rxjs').Observable<any>), { immediateFrom, context, defaults, parseDefaults, defaultStart }?: {
+export function declare(operator: (...args: any[]) => import("rxjs").OperatorFunction<any, any> | import("rxjs").MonoTypeOperatorFunction<any> | ((source: any) => import('rxjs').Observable<any>), { immediateFrom, context, defaults, parseDefaults, defaultStart, async }?: {
     immediateFrom?: number;
     context?: boolean;
     defaults?: any[];
     parseDefaults?: boolean;
     defaultStart?: number;
+    async?: boolean;
 }, inject?: boolean): {
     operator: (...args: any[]) => import("rxjs").OperatorFunction<any, any> | import("rxjs").MonoTypeOperatorFunction<any> | ((source: any) => import('rxjs').Observable<any>);
     configuration: {
@@ -20,6 +22,7 @@ export function declare(operator: (...args: any[]) => import("rxjs").OperatorFun
         context: boolean;
         defaults: any[];
         defaultStart: number;
+        async: boolean;
     };
 };
 /**

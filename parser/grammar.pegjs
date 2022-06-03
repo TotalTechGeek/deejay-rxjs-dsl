@@ -228,7 +228,7 @@ ArrayEntry
  
 
 Identifier "identifier"
-  = [a-zA-Z_0-9] [.a-zA-Z0-9_-]* { return text() }
+  = [a-zA-Z_0-9^] [.a-zA-Z0-9^_-]* { return text() }
   / '@' id:Identifier { return text() }
   / '$' id:Identifier { return text() }
 VarIdentifier "@-identifier"
