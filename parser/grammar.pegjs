@@ -232,10 +232,10 @@ Identifier "identifier"
   / '@' id:Identifier { return text() }
   / '$' id:Identifier { return text() }
 VarIdentifier "@-identifier"
-  = "@." id:MemberIdentifier { return { var: id } }
+  = "@." id:MemberIdentifier { return { var: id.replace(/\.?\^\.?/g, '../') } }
   / "@" { return { var: '' } }
 ContextIdentifier "$-identifier"
-  = '$.' id:MemberIdentifier { return { context: id } }
+  = '$.' id:MemberIdentifier { return { context: id.replace(/\.?\^\.?/g, '../') } }
   / "$" { return { context: '' } }
 MemberIdentifier "member-identifier"
   = Identifier
