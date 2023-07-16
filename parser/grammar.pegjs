@@ -84,10 +84,14 @@ OperationDelimiter
   / ' '
   
 Split
-  = _ '>>' doc:Document '<<' {
+  = _ concurrency:Integer ':>>' doc:Document '<<' {
+      return [
+        { split: doc, concurrency }
+      ]
+    }
+    / _ '>>' doc:Document '<<' {
       return [
         { split: doc }
-        // ,{ operator: 'mergeAll' }
       ]
     }
 

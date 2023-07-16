@@ -207,7 +207,7 @@ function buildDSL (program, {
           )
         }),
         // merge them in.
-        rxOps.mergeAll()
+        rxOps.mergeAll(item.concurrency)
       ]
     } else if (item.fork) {
       let operation = merge
