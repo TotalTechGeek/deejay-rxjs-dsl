@@ -1,6 +1,6 @@
 {
   "name": "deejay-rxjs-dsl",
-  "version": "3.0.36",
+  "version": "3.0.37",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -18,7 +18,7 @@
     "lodash.throttle": "^4.1.1",
     "ramda": "^0.28.0",
     "ramda-adjunct": "^3.0.0",
-    "rxjs": "^7.5.4"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.172",
