@@ -212,8 +212,7 @@ function setupEngine (engine) {
       }
       return result
     },
-    traverse: false,
-    useContext: true
+    traverse: false
   })
 
   function processBin (bin) {
