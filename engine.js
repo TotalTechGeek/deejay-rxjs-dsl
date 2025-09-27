@@ -55,7 +55,7 @@ const objectQuery = {
   }
 }
 
-const deterministic = { deterministic: true, sync: true }
+const deterministic = { deterministic: true, sync: true, optimizeUnary: true }
 
 /**
  * The logic engine you wish to set up.
@@ -111,7 +111,7 @@ function setupEngine (engine) {
 
     return accumulator
   })
-  engine.addMethod('date', i => (i ? new Date(i) : new Date()))
+  engine.addMethod('date', ([i]) => (i ? new Date(i) : new Date()))
   engine.addMethod('stringify', i => JSON.stringify(i), deterministic)
   engine.addMethod('startsWith', ([a, b]) => ('' + a).startsWith(b), deterministic)
   engine.addMethod('first', i => i[0], deterministic)
@@ -275,7 +275,7 @@ function setupEngine (engine) {
       const transformFuncPosition = buildState.methods.length - 1
       const defaultValueInsert = typeof defaultValue !== 'undefined' ? buildString(defaultValue, buildState) : '[]'
       return `((() => {
-            let accumulator = ${buildString(accumulator, buildState)}; 
+            let accumulator = ${buildString(accumulator, buildState)};
             if (!accumulator) accumulator = {};
             const current = ${buildString(current, buildState)};
             const key = methods[${keyFuncPosition}](current);

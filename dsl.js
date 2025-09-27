@@ -80,8 +80,8 @@ function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate 
 
   if (n === 1 && definition.context) {
     mutateTraverse(expressions[0], i => {
-      if (typeof i.var !== 'undefined') throw new Error('Do not use the typical "@" operator in a reducer. Use $.current and $.accumulator.')
-      if (typeof i.context !== 'undefined') return { var: i.context }
+      if (typeof i.val !== 'undefined') throw new Error('Do not use the typical "@" operator in a reducer. Use $.current and $.accumulator.')
+      if (typeof i.context !== 'undefined') return { val: i.context }
       return i
     })
   }
