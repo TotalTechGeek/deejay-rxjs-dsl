@@ -59,10 +59,10 @@ declare(operators.last, { immediateFrom: 1, defaults: [true] })
 declare(operators.first, { immediateFrom: 1, defaults: [true] })
 
 // @ts-ignore This is a virtual operator, but we'll allow it for now.
-declare(sum, { defaults: [{ var: '' }] })
+declare(sum, { defaults: [{ val: '' }] })
 
 // @ts-ignore This is a virtual operator, but we'll allow it for now.
-declare(average, { defaults: [{ var: '' }] })
+declare(average, { defaults: [{ val: '' }] })
 
 /**
  * @param {keyof typeof operators | 'async'} name

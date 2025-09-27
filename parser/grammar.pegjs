@@ -154,7 +154,11 @@ NonArithmeticExpression
   / Null
   / Undefined
 
-ArithmeticExpression = ArithmeticExpression9
+ArithmeticExpression = ArithmeticExpression10
+ArithmeticExpression10
+  = head:ArithmeticExpression9 tail:(_ '??' _ val:ArithmeticExpression9)+
+    { return reduceArithmetic(head, tail); }
+  / ArithmeticExpression9
 ArithmeticExpression9
   = head:ArithmeticExpression8 tail:(_ '||' _ val:ArithmeticExpression8)+
     { return reduceArithmetic(head, tail); }

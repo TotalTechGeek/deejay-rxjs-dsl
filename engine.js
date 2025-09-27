@@ -6,6 +6,7 @@ import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-q
 import { createReducer } from './bin.js'
 import { kjoin } from './joins.js'
 import { mutateTraverse } from './mutateTraverse.js'
+import { of, from, EMPTY } from 'rxjs'
 
 const { build, buildString } = Compiler
 
@@ -92,6 +93,9 @@ function setupEngine (engine) {
   engine.addMethod('isUndefined', i => isUndefined(i), deterministic)
   engine.addMethod('isString', i => isString(i), deterministic)
   engine.addMethod('isValidDate', i => isValidDate(i), deterministic)
+  engine.addMethod('rx.of', i => of(i), deterministic)
+  engine.addMethod('rx.from', i => from(i), deterministic)
+  engine.addMethod('rx.empty', () => EMPTY, deterministic)
   engine.addMethod('join', data => {
     if (Array.isArray(data[0])) {
       const [arr, splitter] = data
