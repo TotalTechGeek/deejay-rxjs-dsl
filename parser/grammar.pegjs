@@ -1,29 +1,18 @@
 {
   String.prototype.stripEscape = function(seq) { return this.replace(`\\${seq}`, seq); }
 
-
-
-   function amend (n, forceArray) {
-    if (!forceArray && !n.includes('.')) {
-    	if (n.startsWith('[') && n.endsWith(']')) return n.substring(1, n.length - 1)
-        return n
-    }
-
-    n = n.split('.')
-    return n
-  }
-
-  function getVar (name) {
-
+  function getVar (path) {
     let upCount = 0
-    while (name.startsWith('../')) {
+    while (path[0] === '^') {
+      path.shift()
       upCount += 1
-      name = name.substring(3)
     }
 
-    if (upCount && !name) return { val: [[upCount]] }
-    if (upCount) return { val: [[upCount], ...amend(name, true)] }
-    return { val: amend(name) }
+
+    if (upCount && path.length === 0) return { val: [[upCount]] }
+    if (upCount) return { val: [[upCount], ...path] }
+    if (path.length === 1) return { val: path[0] }
+    return { val: path }
   }
 
 
@@ -200,10 +189,14 @@ ArithmeticExpression0
   / NonArithmeticExpression
 
 FunctionCall
-  = _ id:Identifier _ '(' _ args:FunctionArgs _ ').' getId:Identifier {
-    return { get: [{ [id]: args.length <= 1 ? args[0] : args }, getId] }
+  = _ id:FuncIdentifier _ '(' _ args:FunctionArgs _ ').' getId:MemberPath {
+    let result = { [id]: args.length <= 1 ? args[0] : args }
+    for (let i = getId.length - 1; i >= 0; i--) {
+      result = { get: [result, getId[i]] }
+    }
+    return result
   }
-  / _ id:Identifier _ '(' _ args:FunctionArgs _ ')' {
+  / _ id:FuncIdentifier _ '(' _ args:FunctionArgs _ ')' {
     return { [id]: args.length <= 1 ? args[0] : args }
   }
 FunctionArgs
@@ -260,23 +253,42 @@ ArrayEntry
   = value:Expression _ "," _ tail:(ArrayEntry) { return [value, ...tail] }
   / value:Expression _ ","?					   { return [value]          }
 
-
 Identifier "identifier"
-  = [a-zA-Z_0-9^] [.a-zA-Z0-9^_-]* { return text() }
+  = [a-zA-Z_0-9^] [a-zA-Z0-9^_-]* { return text() }
   / '@' id:Identifier { return text() }
   / '$' id:Identifier { return text() }
-VarIdentifier "@-identifier"
-  = "@." id:MemberIdentifier { return getVar(id.replace(/\.?\^\.?/g, '../')) }
-  / "@" { return { val: [] } }
-ContextIdentifier "$-identifier"
-  = '$.' id:MemberIdentifier { return { context: getVar(id.replace(/\.?\^\.?/g, '../')).val } }
-  / "$" { return { context: '' } }
-MemberIdentifier "member-identifier"
-  = Identifier
-  / Integer { return text() }
-OperatorIdentifier "operator-identifier"
-  = [a-zA-Z_] [.a-zA-Z0-9_-]* { return text() }
 
+FuncIdentifier "identifier" = [a-zA-Z_0-9^] [a-zA-Z0-9^_.-]* { return text() }
+
+VarIdentifier "@-identifier"
+  = "@." path:MemberPath {
+      return getVar(path);
+    }
+  / "@" { return { val: [] } }
+
+ContextIdentifier "$-identifier"
+  = '$.' path:MemberPath {
+      return { context: getVar(path).val };
+    }
+  / "$" { return { context: '' } }
+
+MemberPath "member-path"
+  = head:MemberIdentifier tail:("." segment:MemberIdentifier { return segment; })* {
+      return [head].concat(tail);
+    }
+
+MemberIdentifier "member-identifier"
+  = BracketExpression
+  / Identifier
+  / Integer { return text() }
+
+BracketExpression "bracket-expression"
+  = "[" expr:Expression "]" {
+      // Return the evaluated expression
+      return expr;
+    }
+
+OperatorIdentifier "operator-identifier" = FuncIdentifier
 
 String "string"
   = '"' value:(DoubleQuotedStringContents*) '"'   { return value.join(''); }
@@ -289,9 +301,9 @@ TemplateQuotedStringContents
   / '\\{' { return String.fromCharCode(123) } // Weird bug in the grammar parser prevents us from using the brace directly.
   / '\\$' { return '$' }
   / '\\@' { return '@' }
-  / "@{" val:MemberIdentifier "}" { return getVar(val) }
+  / "@{" val:MemberPath "}" { return getVar(val) }
   / "@{" val:Expression "}" { error('@{identifier} expressions must only contain member identifiers. This parses to an expression.') }
-  / "${" val:MemberIdentifier "}" { return { context: getVar(val).val } }
+  / "${" val:MemberPath "}" { return { context: getVar(val).val } }
   / "${" val:Expression "}" { error('${identifier} expressions must only contain member identifiers. This parses to an expression.') }
   / "{" val:Expression "}" { return val }
   / "{" val:([^}`]*) "}" { error('Invalid template in templated string.') }
