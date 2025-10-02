@@ -239,7 +239,8 @@ ObjectEntryPair
       const result = recurseObject(val)
       if (!result) error('Expression in object does not contain a single reference to a variable.')
       if (result.length !== 1) error('Expression in object does not contain a single reference to a variable. (' + result.map(i=>i.val || i.var || i.context).join(' & ') + ' referenced)')
-      return [(result[0].val || result.val || (result[0].var || result.var || result[0].context || result.context).split('.')).pop(), val]
+
+      return [[].concat(result[0].val || result.val || (result[0].var || result.var || result[0].context || result.context).split('.')).pop(), val]
   }
 
 ObjectKey
