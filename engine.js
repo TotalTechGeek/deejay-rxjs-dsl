@@ -1,7 +1,7 @@
 import { splitEvery, xprod, omit, pick, type } from 'ramda'
 import { isArray, isBoolean, isDate, isFalse, isFalsy, isNumber, isInteger, isIterable, isObject, isFinite, isNull, isValidDate, isUndefined, isString, isTruthy } from 'ramda-adjunct'
 import * as time from 'date-fns'
-import { Compiler } from 'json-logic-engine'
+import { AsyncLogicEngine, Compiler } from 'json-logic-engine'
 import { queryBuilder, objectQueryBuilder, generatorBuilder } from 'json-power-query'
 import { createReducer } from './bin.js'
 import { kjoin } from './joins.js'
@@ -60,7 +60,7 @@ const deterministic = { deterministic: true, sync: true, optimizeUnary: true }
 
 /**
  * The logic engine you wish to set up.
- * @param {import('json-logic-engine').LogicEngine | import('json-logic-engine').AsyncLogicEngine} engine
+ * @param {import('json-logic-engine').LogicEngine} engine
  */
 function setupEngine (engine) {
   engine.addMethod('aQuery', arrayQuery, deterministic)
@@ -168,7 +168,7 @@ function setupEngine (engine) {
   })
 
   engine.addMethod('overwrite', {
-    method: ([obj, name, value], context, above, engine) => {
+    method: ([obj, name, value]) => {
       return ({ ...obj, [name]: value })
     },
     traverse: true,
@@ -219,35 +219,19 @@ function setupEngine (engine) {
     traverse: false
   })
 
-  function processBin (bin) {
-    const variance = (bin.count * bin.sum2 - bin.sum) / (bin.count * (bin.count - 1))
-    return {
-      min: bin.min,
-      max: bin.max,
-      count: bin.count,
-      sum: bin.sum,
-      average: bin.sum / bin.count,
-      variance,
-      stddev: Math.sqrt(variance)
-    }
-  }
-  engine.addMethod('processBin', processBin, deterministic)
-  engine.addMethod('processBins', bins => {
-    const result = {}
-    for (const key in bins) {
-      result[key] = processBin(bins[key])
-    }
-    return result
-  }, deterministic)
+  engine.methods.fetch = ([url, config]) => fetch(url, config).then(r => r.json())
 
-  engine.addMethod('xy', {
-    method: ([x, y]) => ({ x, y }),
-    traverse: true,
-    sync: true,
+  const asyncEngine = new AsyncLogicEngine()
+  engine.addMethod('async', {
+    lazy: true,
     compile: (data, buildState) => {
-      const x = buildString(data[0], buildState)
-      const y = buildString(data[1], buildState)
-      return `({ x: ${x}, y: ${y} })`
+      asyncEngine.methods = buildState.engine.methods
+
+      const method = asyncEngine.build(data)
+      const method2 = async (ctx) => (await method)(ctx)
+
+      buildState.methods.push(method2)
+      return `await methods[${buildState.methods.length - 1}](context)`
     }
   })
 
@@ -342,8 +326,8 @@ function setupEngine (engine) {
         defaultValue = typeof data[2] === 'undefined' ? null : data[2]
         const pieces = typeof key === 'string' ? key.split('.').map(i => JSON.stringify(i)) : [buildString(key, buildState)]
         return `((${buildString(obj, buildState)})${pieces
-        .map((i) => `?.[${i}]`)
-        .join('')} ?? ${JSON.stringify(defaultValue)})`
+          .map((i) => `?.[${i}]`)
+          .join('')} ?? ${JSON.stringify(defaultValue)})`
       }
       return false
     }

@@ -10,7 +10,7 @@ import { bufferReduce } from './operators/bufferReduce.js'
 import { throttleReduce } from './operators/throttleReduce.js'
 import { average } from './operators/virtual/average.js'
 import { sum } from './operators/virtual/sum.js'
-import { AsyncLogicEngine, LogicEngine } from 'json-logic-engine'
+import { LogicEngine } from 'json-logic-engine'
 import { toObject } from './operators/virtual/toObject.js'
 
 import { clone } from 'ramda'
@@ -36,18 +36,17 @@ fixedOperators.forEach(operator => operatorDefinitions.set(operators[operator], 
  * "immediateFrom" decides which expressions are parsed as functions to be invoked, or as the computed result,
  * "context" decides whether the operator use "$.accumulator" and "$.current" instead of "@",
  * "defaults" can fill in default values for the operator's parameters.
- * "async" allows expressions to be built with the asyncEngine, but will be given to the operator as a Promise<Func>.
  * @param {(...args: any[]) => ((source: any) => import('rxjs').Observable<any>) | import('rxjs').OperatorFunction<any, any> | import('rxjs').MonoTypeOperatorFunction<any> } operator
- * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number, async?: boolean }} [options]
+ * @param {{ immediateFrom?: number, context?: boolean, defaults?: any[], parseDefaults?: boolean, defaultStart?: number }} [options]
  * @param {boolean} [inject] Decides whether this should be injected into a DSL-wide configuration, or wrap the operator. If you are outside of the scope of the module, you might use false.
  */
-export function declare (operator, { immediateFrom = 1, context = false, defaults = [], parseDefaults = false, defaultStart = 0, async = false } = {}, inject = true) {
+export function declare (operator, { immediateFrom = 1, context = false, defaults = [], parseDefaults = false, defaultStart = 0 } = {}, inject = true) {
   if (parseDefaults) defaults = defaults.map(generateLogic)
 
-  if (inject) operatorDefinitions.set(operator, { immediateFrom, context, defaults, defaultStart, async })
+  if (inject) operatorDefinitions.set(operator, { immediateFrom, context, defaults, defaultStart })
   return {
     operator,
-    configuration: { immediateFrom, context, defaults, defaultStart, async }
+    configuration: { immediateFrom, context, defaults, defaultStart }
   }
 }
 
@@ -65,18 +64,17 @@ declare(sum, { defaults: [{ val: '' }] })
 declare(average, { defaults: [{ val: '' }] })
 
 /**
- * @param {keyof typeof operators | 'async'} name
+ * @param {keyof typeof operators} name
  * @param {any[]} expressions
- * @param {{ eval?: boolean, engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, ops?: any, n?: number }} options
+ * @param {{ eval?: boolean, engine?: import('json-logic-engine').LogicEngine, ops?: any, n?: number }} options
  * @returns {Function}
  */
-function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate = false, engine, ops = operators } = {}) {
+function buildOperator (name, expressions, { n = 1, eval: evaluate = false, engine, ops = operators } = {}) {
   const operator = ops[name]
   const definition = operatorDefinitions.get(operator) || operator?.configuration || { immediateFrom: +!evaluate }
   const operatorFunc = operator?.operator || operator
 
-  // a hack due to this being a truly virtual operator.
-  if (name === 'async') definition.async = true
+  if (!engine) throw new Error('An engine must be provided to build the operator.')
 
   if (n === 1 && definition.context) {
     mutateTraverse(expressions[0], i => {
@@ -88,16 +86,12 @@ function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate 
 
   for (let i = 0; i < expressions.length; i++) {
     expressions[i] = i < definition.immediateFrom
-      ? definition.async
-          ? asyncEngine.build(expressions[i])
-          : engine.build(expressions[i])
+      ? engine.build(expressions[i])
       : engine.run(expressions[i])
   }
   // console.log(name, expressions)
 
   const logic = expressions.shift()
-
-  if (name === 'async') return operators.mergeMap(async (...args) => (await logic)(...args), ...expressions)
 
   if (!operator) throw new Error(`Operator '${name}' has not been exposed to the DSL.`)
 
@@ -113,9 +107,8 @@ function buildOperator (name, expressions, { asyncEngine, n = 1, eval: evaluate 
 }
 
 const defaultEngine = setupEngine(new LogicEngine())
-const defaultAsyncEngine = setupEngine(new AsyncLogicEngine())
 
-function parseExpressions (operator, expressions, { substitutions, engine, asyncEngine, additionalOperators, step }) {
+function parseExpressions (operator, expressions, { substitutions, engine, additionalOperators, step }) {
   expressions = ensureDefaults(operator, expressions, { ...additionalOperators, ...operators })
 
   expressions = expressions.map(substitutionLogic({ ...substitutions, '@step': step }))
@@ -135,7 +128,6 @@ function parseExpressions (operator, expressions, { substitutions, engine, async
       n: mode === 1 ? 2 : 1,
       eval: mode === 2,
       engine,
-      asyncEngine,
       ops: { ...additionalOperators, ...operators }
     })
   })
@@ -173,20 +165,19 @@ function ensureDefaults (operator, expressions, operators) {
  * Takes in the instructions from the dsl and generates functions to be used
  * in an RxJS pipeline.
  * @param {*} program
- * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, meta?: { step: string } }} options
+ * @param {{ engine?: import('json-logic-engine').LogicEngine, substitutions?: any, additionalOperators?: any, meta?: { step: string } }} options
  * @returns {((...args) => any)[]}
  */
 function buildDSL (program, {
   substitutions = {},
   engine = defaultEngine,
-  asyncEngine = defaultAsyncEngine,
   additionalOperators = {},
   meta = { step: '$' }
 } = {}) {
   return program.flat().flatMap((item, expressionIndex) => {
     if (item.operator) {
       // expressions
-      return parseExpressions(item.operator, item.expressions || [], { substitutions, engine, asyncEngine, additionalOperators, step: `${meta.step}.${expressionIndex}`.substring(2) })
+      return parseExpressions(item.operator, item.expressions || [], { substitutions, engine, additionalOperators, step: `${meta.step}.${expressionIndex}`.substring(2) })
     } else if (item.split) {
       return [
         // use the pipeline operator map pipe the output of each incoming observable into defined pipeline.
@@ -198,7 +189,6 @@ function buildDSL (program, {
                 '@group': group.key
               },
               engine,
-              asyncEngine,
               additionalOperators,
               meta: {
                 step: `${meta.step}.${expressionIndex}~(${group.key})`
@@ -219,7 +209,6 @@ function buildDSL (program, {
             substitutions,
             additionalOperators,
             engine,
-            asyncEngine,
             meta: {
               step: `${meta.step}.${expressionIndex}~(${forkIndex})`
             }
@@ -236,19 +225,18 @@ function buildDSL (program, {
  * in an RxJS pipeline.
  *
  * @param {string} str
- * @param {{ engine?: import('json-logic-engine').LogicEngine, asyncEngine?: import('json-logic-engine').AsyncLogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
+ * @param {{ engine?: import('json-logic-engine').LogicEngine, substitutions?: any, additionalOperators?: any, mode?: number }} options
  * @returns {[import('rxjs').UnaryFunction<any, any>]}
  */
 export function dsl (str, {
   substitutions = {},
   engine = defaultEngine,
-  asyncEngine = defaultAsyncEngine,
   additionalOperators = {}
 } = {}) {
   const program = parse(str, { startRule: 'Document' })
   return [pipe(
     // @ts-ignore
-    ...buildDSL(program, { substitutions, engine, asyncEngine, additionalOperators })
+    ...buildDSL(program, { substitutions, engine, additionalOperators })
   )]
 }
 
