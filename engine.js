@@ -226,6 +226,7 @@ function setupEngine (engine) {
     lazy: true,
     compile: (data, buildState) => {
       asyncEngine.methods = buildState.engine.methods
+      asyncEngine.fallback.methods = buildState.engine.methods
 
       const method = asyncEngine.build(data)
       const method2 = async (ctx) => (await method)(ctx)
