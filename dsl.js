@@ -22,7 +22,7 @@ const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
 const accumulators = ['reduce', 'scan', 'mergeScan', 'switchScan', 'throttleReduce', 'bufferReduce', 'max', 'min']
-const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray', 'auditTime', 'sampleTime', 'startWith', 'endWith']
+const fixedOperators = ['take', 'takeLast', 'skip', 'pluck', 'debounceTime', 'throttleTime', 'timeout', 'bufferCount', 'windowCount', 'windowTime', 'toArray', 'auditTime', 'sampleTime', 'startWith', 'endWith', 'bufferTime']
 
 const operatorDefinitions = new Map()
 
@@ -176,7 +176,10 @@ function buildDSL (program, {
   additionalOperators = {},
   meta = { step: '$' }
 } = {}) {
-  return program.flat().flatMap((item, expressionIndex) => {
+  return program.map(i => {
+    if (i.type === 'stream') i = i.operations
+    return i
+  }).flat().flatMap((item, expressionIndex) => {
     if (item.operator) {
       // expressions
       return parseExpressions(item.operator, item.expressions || [], { substitutions, engine, additionalOperators, step: `${meta.step}.${expressionIndex}`.substring(2) })
@@ -218,6 +221,7 @@ function buildDSL (program, {
         })
       ))
     }
+
     throw new Error()
   })
 }
