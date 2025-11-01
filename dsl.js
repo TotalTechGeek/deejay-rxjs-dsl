@@ -1,10 +1,11 @@
 // @ts-check
 import * as rxOps from 'rxjs/operators'
-import { merge, zip, race, concat, pipe } from 'rxjs'
+import { merge, zip, race, concat, pipe, Subject } from 'rxjs'
 import { setupEngine } from './engine.js'
 import { mutateTraverse } from './mutateTraverse.js'
 import flush from './operators/flush.js'
 import wrap from './operators/wrap.js'
+import { emit } from './operators/emit.js'
 
 import { bufferReduce } from './operators/bufferReduce.js'
 import { throttleReduce } from './operators/throttleReduce.js'
@@ -16,7 +17,7 @@ import { toObject } from './operators/virtual/toObject.js'
 import { clone } from 'ramda'
 import { parse } from './parse.js'
 
-const operators = { ...rxOps, throttleReduce, bufferReduce, flush, wrap }
+const operators = { ...rxOps, throttleReduce, bufferReduce, flush, wrap, emit }
 const virtualOperators = { sum, average, toObject }
 const joinOperators = { merge, zip, race, concat }
 
@@ -53,6 +54,7 @@ export function declare (operator, { immediateFrom = 1, context = false, default
 // Some declarations of baked in operators
 declare(flush, { immediateFrom: 0, context: false })
 declare(wrap, { defaults: ['@group'], parseDefaults: true, immediateFrom: 0 })
+declare(emit, { defaults: [null, { '@localSubjects': true }], parseDefaults: false, immediateFrom: 2, defaultStart: 1 })
 declare(operators.count, { immediateFrom: 1, defaults: [true] })
 declare(operators.last, { immediateFrom: 1, defaults: [true] })
 declare(operators.first, { immediateFrom: 1, defaults: [true] })
@@ -155,7 +157,7 @@ function substitutionLogic (substitutions) {
 function ensureDefaults (operator, expressions, operators) {
   const definition = operatorDefinitions.get(virtualOperators[operator]) || operatorDefinitions.get(operators[operator]) || operators[operator]?.configuration || {}
   if (definition.defaults && definition.defaults.length > (expressions.length - definition.defaultStart)) {
-    if (expressions.length - definition.defaultStart) { throw new Error(`Not enough parameters for operator '${operator}'.`) }
+    // if (expressions.length - definition.defaultStart) { throw new Error(`Not enough parameters for operator '${operator}'.`) }
     expressions = [...expressions, ...definition.defaults.slice(expressions.length - definition.defaultStart)]
   }
   return expressions
@@ -234,9 +236,38 @@ export function dsl (str, {
   additionalOperators = {}
 } = {}) {
   const program = parse(str, { startRule: 'Document' })
+
+  if (!program.length) return [pipe()]
+
+  const main = program.findIndex(i => (!i.name || i.name === 'main') && i.type === 'stream')
+
+  const localSubjects = {}
+
+  const streams = []
+  const sources = []
+
+  for (let i = 0; i < program.length; i++) {
+    if (i === main) continue
+    const dsl = buildDSL(program[i].operations, { substitutions: { ...substitutions, '@localSubjects': { preserve: localSubjects } }, engine, additionalOperators })
+
+    if (program[i].type === 'stream') {
+      const subject = new Subject()
+      localSubjects[program[i].name] = subject
+      // @ts-ignore This is fine.
+      streams.push(subject.pipe(...dsl))
+    }
+
+    if (program[i].type === 'source') sources.push(engine.build(program[i].expression)().pipe(...dsl))
+  }
+
+  for (const stream of streams) stream.subscribe()
+  for (const source of sources) source.subscribe()
+
+  if (main === -1) return [pipe()]
+
   return [pipe(
     // @ts-ignore
-    ...buildDSL(program, { substitutions, engine, additionalOperators })
+    ...buildDSL(program[main].operations, { substitutions: { ...substitutions, '@localSubjects': { preserve: localSubjects } }, engine, additionalOperators })
   )]
 }
 

@@ -44,8 +44,9 @@
  }
 
   function reduceArithmetic(head, tail) {
+    let accO = {}
     return [head, ...tail].reduce((acc, val) => {
-      if (acc == null) {
+      if (acc == accO) {
         return val;
       }
 
@@ -58,27 +59,48 @@
       const rightHandSide = val[3];
 
       return { [operator]: [acc, rightHandSide] }
-    }, null)
+    }, accO)
   }
 }
 
 
-// Documents
-Document = Operations
+Document
+  = _ blocks:Block+ _ { return blocks.flat(); } / _ { return [] }
+
+// Block: either a Definition (named/expression) or a top-level Operations block
+Block
+  = def:Definition { return [def]; }
+  / ops:Operations {
+      // Only include non-empty top-level operations
+      const cleaned = ops.flat().filter(x => x && (!Array.isArray(x) || x.length > 0));
+      return cleaned.length ? [{ type: 'stream', operations: cleaned }] : [];
+    }
+
+// Definitions (named streams)
+Definitions
+  = head:Definition tail:(_ Definition)* { return [head, ...tail.map(t => t[1])] }
+
+
+// A single definition: identifier ":" operations
+Definition
+  = id:Identifier _ ":" _ ops:Operations { return { type: 'stream', name: id, operations: ops.flat() } } /
+    id:Expression _ ":" _ ops:Operations { return { type: 'source', expression: id, operations: ops.flat() } }
+
+OperationTerminator = &(_ (Expression / Identifier) _ ":")
 
 // Operations
 Operations
-  = _ head:Fork OperationDelimiter tail:Operations           { return [head, ...tail]; }
-  / _ head:Fork _                                            { return [head];          }
-  / _ head:Split OperationDelimiter tail:Operations          { return [head, ...tail]; }
-  / _ head:Split _                                           { return head;            }
-  / _ head:Operation OperationDelimiter tail:Operations      { return [head, ...tail]; }
-  / head:Operation OperationDelimiter                        { return [head];          }
-  / head:Operation                                           { return [head];          }
-  / OperationDelimiter                                       { return [];              }
-  / Comment OperationDelimiter tail:Operations               { return [...tail];       }
-  / Comment                                                  { return []               }
-  / _                                                        { return [];              }
+  = !OperationTerminator _ head:Fork OperationDelimiter tail:Operations           { return [head, ...tail]; }
+  / !OperationTerminator _ head:Fork _                                            { return [head];          }
+  / !OperationTerminator _ head:Split OperationDelimiter tail:Operations          { return [head, ...tail]; }
+  / !OperationTerminator _ head:Split _                                           { return head;            }
+  / !OperationTerminator _ head:Operation OperationDelimiter tail:Operations      { return [head, ...tail]; }
+  / !OperationTerminator head:Operation OperationDelimiter                        { return [head];          }
+  / !OperationTerminator head:Operation                                           { return [head];          }
+  / OperationDelimiter                                                            { return [];              }
+  / Comment OperationDelimiter tail:Operations                                    { return [...tail];       }
+  / Comment                                                                       { return []               }
+
 
 
 Operation
@@ -99,7 +121,7 @@ OperationDelimiter
   / ' '
 
 Split
-  = _ concurrency:Integer ':>>' doc:Document '<<' {
+  = _ concurrency:Integer '>>' doc:Document '<<' {
       return [
         { split: doc, concurrency }
       ]

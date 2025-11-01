@@ -219,8 +219,6 @@ function setupEngine (engine) {
     traverse: false
   })
 
-  engine.methods.fetch = ([url, config]) => fetch(url, config).then(r => r.json())
-
   const asyncEngine = new AsyncLogicEngine()
   engine.addMethod('async', {
     lazy: true,
