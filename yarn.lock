@@ -920,10 +920,10 @@ json-logic-engine@^3.0.2:
   resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-3.0.2.tgz#745a7bf72737063f186ec23ed6f3c0b409000c44"
   integrity sha512-PYk9/T/wXSOMy86Wor/L12hF3Z4UiO0ooJi7AezLGUS0UoviFIItO9rBEP4xDhRiImlFlJ5prb/9pUZNZ1+0NA==
 
-json-logic-engine@^5.0.2:
-  version "5.0.2"
-  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-5.0.2.tgz#355d3026e17adc2031227486f836981ef934bb08"
-  integrity sha512-3HRwlu5TBQgBLFx72JFqQ/y0CnAO+HaNjm7+lq92UIn/WindLKIHkbBkfoA07c1zEE2MsagzcL2QTLTz+KCypw==
+json-logic-engine@^5.0.3:
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-5.0.3.tgz#ae3ae325f9100d9b6b251e22bcca3995f60c6b87"
+  integrity sha512-s8XHAfE39uuBtsCcFJz82j77xbHZX70dkNBkkDpzOUQVeMBQ53dcxtmhro2w7JzzPzF3SF0a+o01aWAS0ZvF5Q==
 
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
